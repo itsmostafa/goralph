@@ -1,0 +1,7 @@
+version: '3'
+
+tasks:
+  run:
+    desc: Run the main.go application
+    cmds:
+      - go run main.go
