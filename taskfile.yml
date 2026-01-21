@@ -10,3 +10,10 @@ tasks:
     desc: Run the main.go application
     cmds:
       - go run main.go
+
+  install:
+    desc: Install goralph to ~/.local/bin/
+    deps: [build]
+    cmds:
+      - mkdir -p ~/.local/bin
+      - cp goralph ~/.local/bin/
