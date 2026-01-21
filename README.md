@@ -13,6 +13,16 @@ An agentic loop that runs Claude Code iteratively with automatic git pushes. Let
 This project is intentionally built to be simple and easy to use as intended by the creator of Ralph, Geoffrey Huntley.
 Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wiggum)
 
+## Features
+
+- **Build and Plan Modes** - Two execution modes with dedicated prompt files for different workflows
+- **Configurable Iteration Limits** - Set maximum iterations with `-n`/`--max` flag or run unlimited
+- **Automatic Git Pushes** - Pushes changes to remote after each iteration, auto-creates remote branches
+- **Styled Terminal Output** - Simple terminal UI with lipgloss styling, colored status indicators, and boxed summaries
+- **Iteration Summaries** - Displays duration, token usage, cost, and status after each iteration
+- **JSON Logging** - Saves full Claude output to timestamped JSONL files in `.ralph/logs/`
+- **Stream JSON Parsing** - Parses Claude's streaming JSON output in real-time
+
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code/getting-started)
