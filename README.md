@@ -1,6 +1,18 @@
+
+
 # Go Ralph - Ralph Wiggum Technique in Go
 
-Reference, https://github.com/ghuntley/how-to-ralph-wiggum, to understand how to implement the Ralph Wiggum Technique
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)](https://claude.ai/code)
+
+<p align="center">
+  <img src="assets/img/goralph-logo.png" alt="Go Ralph Logo" width="400">
+</p>
+
+An agentic loop that runs Claude Code iteratively with automatic git pushes. Letting your AI agents build while you sleep.
+Learn about the [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
+This project is intentionally built to be simple and easy to use as intended by the creator of Ralph, Geoffrey Huntley.
+Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wiggum)
 
 ## Requirements
 
