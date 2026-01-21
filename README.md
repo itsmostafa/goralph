@@ -6,7 +6,7 @@
 [![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)](https://claude.ai/code)
 
 <p align="center">
-  <img src="assets/img/goralph-logo.png" alt="Go Ralph Logo" width="400">
+  <img src="assets/img/goralph-logo.png" alt="Go Ralph Logo" width="200">
 </p>
 
 An agentic loop that runs Claude Code iteratively with automatic git pushes. Letting your AI agents build while you sleep.
