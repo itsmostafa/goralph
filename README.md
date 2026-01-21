@@ -1,6 +1,4 @@
-
-
-# Go Ralph - Ralph Wiggum Technique in Go
+# Go Ralph - A Simple CLI for the Ralph Wiggum Technique
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)](https://claude.ai/code)
