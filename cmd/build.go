@@ -10,11 +10,11 @@ var buildMaxIterations int
 var buildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Run the agentic loop in build mode",
-	Long:  `Run Claude Code in build mode using PROMPT_build.md as the prompt file.`,
+	Long:  `Run Claude Code in build mode using .ralph/PROMPT_build.md as the prompt file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return loop.Run(loop.Config{
 			Mode:          loop.ModeBuild,
-			PromptFile:    "PROMPT_build.md",
+			PromptFile:    ".ralph/PROMPT_build.md",
 			MaxIterations: buildMaxIterations,
 		})
 	},

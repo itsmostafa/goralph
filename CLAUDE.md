@@ -24,13 +24,13 @@ task run               # Run main.go
 ## Architecture
 
 The loop script (`loop.sh`) orchestrates Claude Code sessions:
-1. Reads from `PROMPT_build.md` (build mode) or `PROMPT_plan.md` (plan mode)
+1. Reads from `.ralph/PROMPT_build.md` (build mode) or `.ralph/PROMPT_plan.md` (plan mode)
 2. Runs Claude in headless mode with `--dangerously-skip-permissions`
 3. Pushes all changes to the current branch after each iteration
 4. Repeats until max iterations reached or manually stopped
 
 ## Required Files
 
-- `PROMPT_build.md` - Build mode prompt for the agentic loop
-- `PROMPT_plan.md` - Plan mode prompt for the agentic loop
+- `.ralph/PROMPT_build.md` - Build mode prompt for the agentic loop
+- `.ralph/PROMPT_plan.md` - Plan mode prompt for the agentic loop
 - `taskfile.yml` - Task runner configuration

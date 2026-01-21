@@ -10,17 +10,17 @@
 if [ "$1" = "plan" ]; then
     # Plan mode
     MODE="plan"
-    PROMPT_FILE="PROMPT_plan.md"
+    PROMPT_FILE=".ralph/PROMPT_plan.md"
     MAX_ITERATIONS=${2:-0}
 elif [[ "$1" =~ ^[0-9]+$ ]]; then
     # Build mode with max iterations
     MODE="build"
-    PROMPT_FILE="PROMPT_build.md"
+    PROMPT_FILE=".ralph/PROMPT_build.md"
     MAX_ITERATIONS=$1
 else
     # Build mode, unlimited (no arguments or invalid input)
     MODE="build"
-    PROMPT_FILE="PROMPT_build.md"
+    PROMPT_FILE=".ralph/PROMPT_build.md"
     MAX_ITERATIONS=0
 fi
 

@@ -10,11 +10,11 @@ var planMaxIterations int
 var planCmd = &cobra.Command{
 	Use:   "plan",
 	Short: "Run the agentic loop in plan mode",
-	Long:  `Run Claude Code in plan mode using PROMPT_plan.md as the prompt file.`,
+	Long:  `Run Claude Code in plan mode using .ralph/PROMPT_plan.md as the prompt file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return loop.Run(loop.Config{
 			Mode:          loop.ModePlan,
-			PromptFile:    "PROMPT_plan.md",
+			PromptFile:    ".ralph/PROMPT_plan.md",
 			MaxIterations: planMaxIterations,
 		})
 	},
