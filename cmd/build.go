@@ -16,6 +16,7 @@ var buildCmd = &cobra.Command{
 			Mode:          loop.ModeBuild,
 			PromptFile:    ".ralph/PROMPT_build.md",
 			MaxIterations: buildMaxIterations,
+			Output:        cmd.OutOrStdout(),
 		})
 	},
 }

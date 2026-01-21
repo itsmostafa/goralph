@@ -16,6 +16,7 @@ var planCmd = &cobra.Command{
 			Mode:          loop.ModePlan,
 			PromptFile:    ".ralph/PROMPT_plan.md",
 			MaxIterations: planMaxIterations,
+			Output:        cmd.OutOrStdout(),
 		})
 	},
 }
