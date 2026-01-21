@@ -33,3 +33,55 @@ type Usage struct {
 	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
 	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 }
+
+// AssistantMessage represents an assistant message from Claude stream output
+type AssistantMessage struct {
+	Type    string           `json:"type"`
+	Message AssistantContent `json:"message"`
+}
+
+// AssistantContent represents the content within an assistant message
+type AssistantContent struct {
+	Content []ContentBlock `json:"content"`
+}
+
+// ContentBlock represents a single content block (text or tool_use)
+type ContentBlock struct {
+	Type  string `json:"type"`
+	Text  string `json:"text,omitempty"`
+	ID    string `json:"id,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Input any    `json:"input,omitempty"`
+}
+
+// UserMessage represents a user message (often contains tool results)
+type UserMessage struct {
+	Type    string      `json:"type"`
+	Message UserContent `json:"message"`
+}
+
+// UserContent represents the content within a user message
+type UserContent struct {
+	Content []ToolResultBlock `json:"content"`
+}
+
+// ToolResultBlock represents a tool result in a user message
+type ToolResultBlock struct {
+	Type      string `json:"type"`
+	ToolUseID string `json:"tool_use_id,omitempty"`
+}
+
+// StreamState tracks the state during streaming output
+type StreamState struct {
+	LastTextLen    int
+	ActiveTools    map[string]string // tool ID -> tool name
+	CompletedTools map[string]bool
+}
+
+// NewStreamState creates a new StreamState with initialized maps
+func NewStreamState() *StreamState {
+	return &StreamState{
+		ActiveTools:    make(map[string]string),
+		CompletedTools: make(map[string]bool),
+	}
+}

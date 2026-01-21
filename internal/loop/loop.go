@@ -166,6 +166,7 @@ func parseClaudeOutput(r io.Reader, w io.Writer, logFile io.Writer) error {
 	scanner.Buffer(buf, 1024*1024)
 
 	var resultMsg *ResultMessage
+	state := NewStreamState()
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -196,8 +197,12 @@ func parseClaudeOutput(r io.Reader, w io.Writer, logFile io.Writer) error {
 			resultMsg = &result
 
 		case "assistant":
-			// Could stream assistant content here if desired
-			// For now we just wait for the final result
+			// Stream assistant content
+			processAssistantMessage(line, w, state)
+
+		case "user":
+			// Check for tool results to mark tools as complete
+			processUserMessage(line, w, state)
 
 		case "system":
 			// System messages (session info, etc.)
@@ -218,6 +223,55 @@ func parseClaudeOutput(r io.Reader, w io.Writer, logFile io.Writer) error {
 	}
 
 	return nil
+}
+
+// processAssistantMessage extracts and streams content from assistant messages
+func processAssistantMessage(line []byte, w io.Writer, state *StreamState) {
+	var assistantMsg AssistantMessage
+	if err := json.Unmarshal(line, &assistantMsg); err != nil {
+		return
+	}
+
+	// Build the full text from all text blocks
+	var fullText strings.Builder
+	for _, block := range assistantMsg.Message.Content {
+		switch block.Type {
+		case "text":
+			fullText.WriteString(block.Text)
+		case "tool_use":
+			// Track and display tool invocations
+			if block.ID != "" && state.ActiveTools[block.ID] == "" {
+				state.ActiveTools[block.ID] = block.Name
+				FormatToolStart(w, block.Name)
+			}
+		}
+	}
+
+	// Calculate and output the delta (new text since last message)
+	currentText := fullText.String()
+	if len(currentText) > state.LastTextLen {
+		delta := currentText[state.LastTextLen:]
+		FormatTextDelta(w, delta)
+		state.LastTextLen = len(currentText)
+	}
+}
+
+// processUserMessage checks for tool results and marks tools as complete
+func processUserMessage(line []byte, w io.Writer, state *StreamState) {
+	var userMsg UserMessage
+	if err := json.Unmarshal(line, &userMsg); err != nil {
+		return
+	}
+
+	for _, block := range userMsg.Message.Content {
+		if block.Type == "tool_result" && block.ToolUseID != "" {
+			toolName := state.ActiveTools[block.ToolUseID]
+			if toolName != "" && !state.CompletedTools[block.ToolUseID] {
+				state.CompletedTools[block.ToolUseID] = true
+				FormatToolComplete(w, toolName)
+			}
+		}
+	}
 }
 
 func pushChanges(branch string) error {

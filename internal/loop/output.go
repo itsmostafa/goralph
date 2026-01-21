@@ -43,6 +43,19 @@ var (
 			Foreground(lipgloss.Color("212")).
 			Background(lipgloss.Color("57")).
 			Padding(0, 2)
+
+	// toolNameStyle for tool names in streaming output
+	toolNameStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("81")).
+			Bold(true)
+
+	// toolActiveStyle for the active tool indicator
+	toolActiveStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("220"))
+
+	// toolCompleteStyle for the completed tool indicator
+	toolCompleteStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("42"))
 )
 
 // FormatHeader renders the loop header with configuration info
@@ -91,11 +104,8 @@ func FormatIterationSummary(w io.Writer, result ResultMessage) {
 		statusIndicator,
 	)
 
-	// Print the result text first if present
-	if result.Result != "" {
-		fmt.Fprintln(w, result.Result)
-		fmt.Fprintln(w)
-	}
+	// Note: Result text is not printed here because it's streamed in real-time
+	// during parseClaudeOutput via processAssistantMessage
 
 	// Combine and render summary box after the response
 	content := titleStyle.Render("Iteration Complete") + "\n" + line1 + "\n" + line2
@@ -125,4 +135,23 @@ func formatNumber(n int) string {
 		return fmt.Sprintf("%d,%03d", n/1000, n%1000)
 	}
 	return fmt.Sprintf("%d,%03d,%03d", n/1000000, (n/1000)%1000, n%1000)
+}
+
+// FormatTextDelta writes text content to the output
+func FormatTextDelta(w io.Writer, text string) {
+	fmt.Fprint(w, text)
+}
+
+// FormatToolStart writes a tool invocation indicator
+func FormatToolStart(w io.Writer, toolName string) {
+	indicator := toolActiveStyle.Render("●")
+	name := toolNameStyle.Render(toolName)
+	fmt.Fprintf(w, "\n%s %s running...\n", indicator, name)
+}
+
+// FormatToolComplete writes a tool completion indicator
+func FormatToolComplete(w io.Writer, toolName string) {
+	indicator := toolCompleteStyle.Render("✓")
+	name := toolNameStyle.Render(toolName)
+	fmt.Fprintf(w, "%s %s done\n", indicator, name)
 }
