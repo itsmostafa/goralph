@@ -10,7 +10,6 @@
 </p>
 
 An agentic loop that runs Claude Code iteratively with automatic git pushes. Letting your AI agents build while you sleep.
-Learn about the [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
 This project is intentionally built to be simple and easy to use as intended by the creator of Ralph, Geoffrey Huntley.
 Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wiggum)
 
@@ -18,6 +17,30 @@ Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wig
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code/getting-started)
 - [Go 1.25](https://go.dev/doc/install)
+- [Task](https://github.com/go-task/task) (optional) - for running task commands like `task run`
+
+## Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/goralph.git
+   cd goralph
+   ```
+
+2. Build and install the binary:
+   ```bash
+   go build -o goralph .
+   go install
+   ```
+
+3. Create the required prompt files in your target project:
+   ```bash
+   mkdir -p .ralph
+   touch .ralph/PROMPT_build.md
+   touch .ralph/PROMPT_plan.md
+   ```
+
+4. Add your prompts to the files created above. These prompts will be used by Claude Code during the agentic loop.
 
 ## Usage
 
