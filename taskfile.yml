@@ -1,6 +1,11 @@
 version: '3'
 
 tasks:
+  build:
+    desc: Build the goralph binary
+    cmds:
+      - go build -o goralph .
+
   run:
     desc: Run the main.go application
     cmds:

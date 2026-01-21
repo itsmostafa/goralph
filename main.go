@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "github.com/itsmostafa/goralph/cmd"
 
 func main() {
-	fmt.Println("Hello, World!")
+	cmd.Execute()
 }
