@@ -93,3 +93,17 @@ Before running, ensure these prompt files exist in your `.ralph/` directory:
 - `.ralph/PROMPT_build.md` - Prompt used for build mode
 - `.ralph/PROMPT_plan.md` - Prompt used for plan mode
 - `.ralph/IMPLEMENTATION_PLAN.md` - Task tracking file (auto-created if missing)
+
+### Warning
+
+**Claude Code must run with `--dangerously-skip-permissions` mode enabled for Go Ralph to function.**
+
+This mode allows Claude to execute commands without confirmation prompts, which is required for unattended agentic loops.
+
+**It is strongly recommended to run Go Ralph (or any fully autonomous AI agent) inside a sandbox or isolated environment.**
+
+Running autonomous agents with unrestricted system access carries inherent risks. Sandboxing limits the potential impact of unintended actions.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
