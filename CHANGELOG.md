@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0](https://github.com/itsmostafa/goralph/compare/v1.0.0...v1.1.0) (2026-01-22)
+
+
+### Features
+
+* **loop:** add implementation plan support with Codex CLI integration plan ([5f2dad0](https://github.com/itsmostafa/goralph/commit/5f2dad0719583f1b352bb9f3dd1b60ff2bc620e2))
+* **loop:** add iteration-aware task generation guidance ([939affa](https://github.com/itsmostafa/goralph/commit/939affa6aaa85e428a76635a4535b06aaad085a5))
+* **loop:** add iteration-aware task generation guidance ([4b16afd](https://github.com/itsmostafa/goralph/commit/4b16afdfe6c90c98de1b67a989800151305bc48b))
+* **runner:** add Runner interface for AI CLI abstraction ([77e2496](https://github.com/itsmostafa/goralph/commit/77e249699bfebfc38cbaac64826e8123d0e0d5d8))
+* **version:** add version package with ldflags support ([6742732](https://github.com/itsmostafa/goralph/commit/6742732e596dee010452e7a0d4a8915fedeee36e))
+
 ## 1.0.0 (2026-01-22)
 
 
