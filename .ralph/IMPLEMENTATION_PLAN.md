@@ -16,8 +16,6 @@ Add support for OpenAI's Codex CLI as an alternative to Claude Code. Users will 
 
 ## Tasks
 
-- [ ] **1. Define Runner interface** - Create `internal/runner/runner.go` with a `Runner` interface that abstracts the AI CLI execution. Define methods: `Command() *exec.Cmd`, `ParseOutput(io.Reader, io.Writer, io.Writer) (*Result, error)`. Create a `Result` struct with common fields (Duration, NumTurns, Cost, Tokens, IsError).
-
 - [ ] **2. Implement ClaudeRunner** - Move Claude-specific logic from `loop.go` into `internal/runner/claude.go`. Implement the `Runner` interface for Claude. Extract `runClaudeIteration` logic into the runner, including command construction and output parsing.
 
 - [ ] **3. Implement CodexRunner** - Create `internal/runner/codex.go` implementing the `Runner` interface for Codex CLI. Use `codex exec` with `--json` for structured output. Parse Codex JSON events and map to common `Result` struct. Handle Codex-specific flags (`--yolo`, `--full-auto`).
@@ -38,4 +36,4 @@ Add support for OpenAI's Codex CLI as an alternative to Claude Code. Users will 
 
 ## Completed
 
-<!-- Completed tasks will be moved here as: - [x] Task description -->
+- [x] **1. Define Runner interface** - Created `internal/runner/runner.go` with a `Runner` interface that abstracts the AI CLI execution. Defined methods: `Name() string`, `Command() *exec.Cmd`, `ParseOutput(io.Reader, io.Writer, io.Writer) (*Result, error)`. Created `Result` and `Usage` structs with common fields.
