@@ -1,10 +1,21 @@
 version: '3'
 
+vars:
+  VERSION: dev
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+  BUILD_DATE:
+    sh: date -u +%Y-%m-%dT%H:%M:%SZ
+  LDFLAGS: >-
+    -X github.com/itsmostafa/goralph/internal/version.Version={{.VERSION}}
+    -X github.com/itsmostafa/goralph/internal/version.Commit={{.COMMIT}}
+    -X github.com/itsmostafa/goralph/internal/version.BuildDate={{.BUILD_DATE}}
+
 tasks:
   build:
     desc: Build the goralph binary
     cmds:
-      - go build -o goralph .
+      - go build -ldflags="{{.LDFLAGS}}" -o goralph .
 
   run:
     desc: Run the main.go application
@@ -17,3 +28,13 @@ tasks:
     cmds:
       - mkdir -p ~/.local/bin
       - cp goralph ~/.local/bin/
+
+  cross-compile:
+    desc: Build binaries for all platforms (for local testing)
+    cmds:
+      - mkdir -p dist
+      - CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="{{.LDFLAGS}}" -o dist/goralph-darwin-amd64 .
+      - CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="{{.LDFLAGS}}" -o dist/goralph-darwin-arm64 .
+      - CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="{{.LDFLAGS}}" -o dist/goralph-windows-amd64.exe .
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="{{.LDFLAGS}}" -o dist/goralph-linux-amd64 .
+      - CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="{{.LDFLAGS}}" -o dist/goralph-linux-arm64 .

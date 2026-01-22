@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/itsmostafa/goralph/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +15,11 @@ var rootCmd = &cobra.Command{
 pattern that runs Claude Code iteratively with automatic git pushes between iterations.
 
 Reference: https://github.com/ghuntley/how-to-ralph-wiggum`,
+}
+
+func init() {
+	rootCmd.Version = version.Version
+	rootCmd.SetVersionTemplate(fmt.Sprintf("goralph %s\n", version.String()))
 }
 
 // Execute runs the root command
