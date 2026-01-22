@@ -15,6 +15,8 @@ Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wig
 ## Features
 
 - **Build and Plan Modes** - Two execution modes with dedicated prompt files for different workflows
+- **Implementation Plan Tracking** - Auto-manages `.ralph/IMPLEMENTATION_PLAN.md` for task tracking across iterations
+- **Iteration-Aware Task Generation** - When using `-n`/`--max`, Claude breaks work into approximately N tasks
 - **Configurable Iteration Limits** - Set maximum iterations with `-n`/`--max` flag or run unlimited
 - **Automatic Git Pushes** - Pushes changes to remote after each iteration, auto-creates remote branches
 - **Styled Terminal Output** - Simple terminal UI with lipgloss styling, colored status indicators, and boxed summaries
@@ -83,3 +85,4 @@ Before running, ensure these prompt files exist in your `.ralph/` directory:
 
 - `.ralph/PROMPT_build.md` - Prompt used for build mode
 - `.ralph/PROMPT_plan.md` - Prompt used for plan mode
+- `.ralph/IMPLEMENTATION_PLAN.md` - Task tracking file (auto-created if missing)
