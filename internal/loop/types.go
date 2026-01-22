@@ -1,5 +1,27 @@
 package loop
 
+import "fmt"
+
+// CLIProvider represents the CLI provider to use
+type CLIProvider string
+
+const (
+	CLIClaude CLIProvider = "claude"
+	CLICodex  CLIProvider = "codex"
+)
+
+// ValidateCLIProvider checks if the given CLI provider is valid
+func ValidateCLIProvider(cli string) (CLIProvider, error) {
+	switch CLIProvider(cli) {
+	case CLIClaude:
+		return CLIClaude, nil
+	case CLICodex:
+		return CLICodex, nil
+	default:
+		return "", fmt.Errorf("unknown CLI provider: %q (valid options: claude, codex)", cli)
+	}
+}
+
 // Message represents a generic JSON message from Claude stream output
 type Message struct {
 	Type    string `json:"type"`

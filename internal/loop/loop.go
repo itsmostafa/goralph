@@ -29,6 +29,7 @@ type Config struct {
 	PromptFile    string
 	MaxIterations int
 	NoPush        bool
+	CLI           CLIProvider
 	Output        io.Writer
 }
 
