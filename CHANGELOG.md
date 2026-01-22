@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/itsmostafa/goralph/compare/v1.1.0...v1.2.0) (2026-01-22)
+
+
+### Features
+
+* **cli:** add --no-push flag to skip pushing after iterations ([1b6b549](https://github.com/itsmostafa/goralph/commit/1b6b549c6b162e26fb2e8ee74bd2ba23d4923e4f))
+* **cli:** add --no-push flag to skip pushing after iterations ([5cfd41f](https://github.com/itsmostafa/goralph/commit/5cfd41f8d091fefa436e54bb771135d30e980398))
+
 ## [1.1.0](https://github.com/itsmostafa/goralph/compare/v1.0.0...v1.1.0) (2026-01-22)
 
 
