@@ -45,4 +45,4 @@ debug
 
 # AI
 .claude/
-.ralph/
+.ralph/logs/

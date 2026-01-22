@@ -18,6 +18,9 @@ type Mode string
 const (
 	ModeBuild Mode = "build"
 	ModePlan  Mode = "plan"
+
+	// ImplementationPlanFile is the path to the implementation plan
+	ImplementationPlanFile = ".ralph/IMPLEMENTATION_PLAN.md"
 )
 
 // Config holds the loop configuration
@@ -44,6 +47,11 @@ func Run(cfg Config) error {
 	// Verify prompt file exists
 	if _, err := os.Stat(cfg.PromptFile); os.IsNotExist(err) {
 		return fmt.Errorf("prompt file not found: %s", cfg.PromptFile)
+	}
+
+	// Ensure implementation plan exists
+	if err := ensureImplementationPlan(); err != nil {
+		return err
 	}
 
 	// Print configuration
@@ -85,11 +93,73 @@ func getCurrentBranch() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func runClaudeIteration(promptFile string, w io.Writer) error {
-	// Read prompt file
+// ensureImplementationPlan creates the implementation plan file if it doesn't exist
+func ensureImplementationPlan() error {
+	if _, err := os.Stat(ImplementationPlanFile); os.IsNotExist(err) {
+		template := `# Implementation Plan
+
+## Tasks
+
+<!-- Add tasks here as: - [ ] Task description -->
+
+## Completed
+
+<!-- Completed tasks will be moved here as: - [x] Task description -->
+`
+		if err := os.WriteFile(ImplementationPlanFile, []byte(template), 0644); err != nil {
+			return fmt.Errorf("failed to create implementation plan: %w", err)
+		}
+	}
+	return nil
+}
+
+// buildPromptWithPlan reads the prompt file and appends the implementation plan with instructions
+func buildPromptWithPlan(promptFile string) ([]byte, error) {
+	// Read the prompt file
 	promptContent, err := os.ReadFile(promptFile)
 	if err != nil {
-		return fmt.Errorf("failed to read prompt file: %w", err)
+		return nil, fmt.Errorf("failed to read prompt file: %w", err)
+	}
+
+	// Read the implementation plan
+	planContent, err := os.ReadFile(ImplementationPlanFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read implementation plan: %w", err)
+	}
+
+	// Build instructions to append
+	instructions := `
+---
+
+# Implementation Plan Instructions
+
+Study the implementation plan below. Pick the most important uncompleted task.
+
+If the Tasks section is empty, analyze the project and add a comprehensive list of implementation tasks.
+
+Complete ONE task, then:
+1. Update ` + "`" + ImplementationPlanFile + "`" + ` to mark the task as completed (move to Completed section)
+2. Commit your changes with a descriptive message
+3. Exit
+
+The loop will automatically restart with a fresh context window.
+
+---
+
+# Current Implementation Plan
+
+` + "```markdown\n" + string(planContent) + "\n```"
+
+	// Combine prompt + instructions + plan
+	combined := append(promptContent, []byte(instructions)...)
+	return combined, nil
+}
+
+func runClaudeIteration(promptFile string, w io.Writer) error {
+	// Build prompt with implementation plan
+	promptContent, err := buildPromptWithPlan(promptFile)
+	if err != nil {
+		return err
 	}
 
 	// Create logs directory
