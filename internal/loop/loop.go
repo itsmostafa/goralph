@@ -49,8 +49,8 @@ func Run(cfg Config) error {
 		return fmt.Errorf("prompt file not found: %s", cfg.PromptFile)
 	}
 
-	// Ensure implementation plan exists
-	if err := ensureImplementationPlan(); err != nil {
+	// Reset implementation plan to initial template
+	if err := resetImplementationPlan(); err != nil {
 		return err
 	}
 
@@ -93,10 +93,9 @@ func getCurrentBranch() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-// ensureImplementationPlan creates the implementation plan file if it doesn't exist
-func ensureImplementationPlan() error {
-	if _, err := os.Stat(ImplementationPlanFile); os.IsNotExist(err) {
-		template := `# Implementation Plan
+// resetImplementationPlan resets the implementation plan file to the initial template
+func resetImplementationPlan() error {
+	template := `# Implementation Plan
 
 ## Tasks
 
@@ -106,9 +105,8 @@ func ensureImplementationPlan() error {
 
 <!-- Completed tasks will be moved here as: - [x] Task description -->
 `
-		if err := os.WriteFile(ImplementationPlanFile, []byte(template), 0644); err != nil {
-			return fmt.Errorf("failed to create implementation plan: %w", err)
-		}
+	if err := os.WriteFile(ImplementationPlanFile, []byte(template), 0644); err != nil {
+		return fmt.Errorf("failed to reset implementation plan: %w", err)
 	}
 	return nil
 }
