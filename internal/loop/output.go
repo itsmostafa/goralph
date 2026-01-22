@@ -65,8 +65,15 @@ func FormatHeader(w io.Writer, cfg Config, branch string) {
 		maxLine = fmt.Sprintf("\n%s %d iterations", dimStyle.Render("Max:"), cfg.MaxIterations)
 	}
 
-	content := fmt.Sprintf("%s %s\n%s %s\n%s %s%s",
+	// Display CLI provider (default to "claude" if not set)
+	cliName := string(cfg.CLI)
+	if cliName == "" {
+		cliName = "claude"
+	}
+
+	content := fmt.Sprintf("%s %s  %s %s\n%s %s\n%s %s%s",
 		dimStyle.Render("Mode:"), titleStyle.Render(string(cfg.Mode)),
+		dimStyle.Render("CLI:"), titleStyle.Render(cliName),
 		dimStyle.Render("Prompt:"), cfg.PromptFile,
 		dimStyle.Render("Branch:"), successStyle.Render(branch),
 		maxLine,

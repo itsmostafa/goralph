@@ -2,12 +2,20 @@
 
 ## Tasks
 
-- [ ] **Task 3: Implement Codex output parsing**
-  - Add Codex-specific message types to `types.go`
-  - Implement `CodexProvider.ParseOutput` for Codex JSON events
-  - Update `FormatHeader` in `output.go` to display CLI provider name
+(All tasks completed)
 
 ## Completed
+
+- [x] **Task 3: Implement Codex output parsing**
+  - Added Codex-specific message types to `types.go`:
+    - `CodexThreadStartedEvent`, `CodexTurnCompletedEvent`, `CodexUsage`
+    - `CodexItem` struct with fields for all item types
+  - Implemented `CodexProvider.ParseOutput` with full event handling:
+    - Tracks turn counts and aggregates usage statistics
+    - Handles `turn.completed` for token usage extraction
+    - Handles `item.started`/`item.completed` for tool tracking
+    - Properly handles `error` and `turn.failed` events
+  - Updated `FormatHeader` in `output.go` to display CLI provider name
 
 - [x] **Task 2: Create provider-specific command builders**
   - Created `internal/loop/provider.go` with `Provider` interface

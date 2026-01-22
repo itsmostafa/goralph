@@ -184,7 +184,6 @@ func (p *CodexProvider) BuildCommand(prompt []byte) (*exec.Cmd, error) {
 }
 
 // ParseOutput parses Codex's JSON stream output
-// This is a placeholder - Task 3 will implement full Codex parsing
 func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer) (*ResultMessage, error) {
 	scanner := bufio.NewScanner(r)
 	buf := make([]byte, 0, 64*1024)
@@ -192,6 +191,8 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 
 	state := NewStreamState()
 	var turnCount int
+	var totalUsage CodexUsage
+	var hasError bool
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -214,19 +215,26 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 		switch event.Type {
 		case "turn.started":
 			turnCount++
-		case "turn.completed", "turn.failed":
-			// Turn finished
+		case "turn.completed":
+			// Extract usage stats from turn.completed events
+			var turnEvent CodexTurnCompletedEvent
+			if err := json.Unmarshal(line, &turnEvent); err == nil {
+				totalUsage.InputTokens += turnEvent.Usage.InputTokens
+				totalUsage.CachedInputTokens += turnEvent.Usage.CachedInputTokens
+				totalUsage.OutputTokens += turnEvent.Usage.OutputTokens
+			}
+		case "turn.failed":
+			hasError = true
 		case "error":
-			// Handle error events
+			hasError = true
 			var errEvent CodexErrorEvent
 			if err := json.Unmarshal(line, &errEvent); err == nil && errEvent.Message != "" {
 				fmt.Fprintf(w, "\n%s\n", errorStyle.Render("Error: "+errEvent.Message))
 			}
-		default:
-			// Handle item.* events
-			if strings.HasPrefix(event.Type, "item.") {
-				processCodexItemEvent(line, w, state)
-			}
+		case "item.started":
+			processCodexItemStarted(line, w, state)
+		case "item.completed":
+			processCodexItemCompleted(line, w, state)
 		}
 	}
 
@@ -235,53 +243,89 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 	}
 
 	// Build a result message for summary display
-	// Codex doesn't provide the same stats, so we provide what we can
 	result := &ResultMessage{
 		Type:     "result",
 		NumTurns: turnCount,
-		// Other fields will be zero/empty - Task 3 will enhance this
+		IsError:  hasError,
+		Usage: Usage{
+			InputTokens:         totalUsage.InputTokens,
+			OutputTokens:        totalUsage.OutputTokens,
+			CacheReadInputTokens: totalUsage.CachedInputTokens,
+		},
 	}
 
 	return result, nil
 }
 
-// processCodexItemEvent handles item.* events from Codex output
-func processCodexItemEvent(line []byte, w io.Writer, state *StreamState) {
+// processCodexItemStarted handles item.started events from Codex output
+func processCodexItemStarted(line []byte, w io.Writer, state *StreamState) {
 	var itemEvent CodexItemEvent
 	if err := json.Unmarshal(line, &itemEvent); err != nil {
 		return
 	}
 
-	switch itemEvent.Type {
-	case "item.message":
-		// Text output from the agent
-		if text, ok := itemEvent.Content.(string); ok {
-			FormatTextDelta(w, text)
+	item := itemEvent.Item
+	switch item.Type {
+	case "command_execution":
+		// Command execution starting - use command as the tool name
+		toolName := "bash"
+		if item.Command != "" {
+			// Truncate long commands for display
+			cmd := item.Command
+			if len(cmd) > 50 {
+				cmd = cmd[:47] + "..."
+			}
+			toolName = cmd
 		}
-	case "item.reasoning":
-		// Reasoning text (could display differently if desired)
-		if text, ok := itemEvent.Content.(string); ok {
-			FormatTextDelta(w, text)
-		}
-	case "item.command_start":
-		// Command execution starting
-		if name, ok := itemEvent.Content.(string); ok {
-			FormatToolStart(w, name)
-		}
-	case "item.command_end":
-		// Command execution complete
-		if name, ok := itemEvent.Content.(string); ok {
-			FormatToolComplete(w, name)
-		}
-	case "item.mcp_tool_start":
+		state.ActiveTools[item.ID] = toolName
+		FormatToolStart(w, toolName)
+	case "mcp_tool_call":
 		// MCP tool invocation starting
-		if name, ok := itemEvent.Content.(string); ok {
-			FormatToolStart(w, name)
+		toolName := item.Name
+		if toolName == "" {
+			toolName = "mcp_tool"
 		}
-	case "item.mcp_tool_end":
-		// MCP tool invocation complete
-		if name, ok := itemEvent.Content.(string); ok {
-			FormatToolComplete(w, name)
+		state.ActiveTools[item.ID] = toolName
+		FormatToolStart(w, toolName)
+	case "file_change":
+		state.ActiveTools[item.ID] = "file_change"
+		FormatToolStart(w, "file_change")
+	case "web_search":
+		state.ActiveTools[item.ID] = "web_search"
+		FormatToolStart(w, "web_search")
+	}
+}
+
+// processCodexItemCompleted handles item.completed events from Codex output
+func processCodexItemCompleted(line []byte, w io.Writer, state *StreamState) {
+	var itemEvent CodexItemEvent
+	if err := json.Unmarshal(line, &itemEvent); err != nil {
+		return
+	}
+
+	item := itemEvent.Item
+	switch item.Type {
+	case "agent_message":
+		// Text output from the agent
+		if item.Text != "" {
+			FormatTextDelta(w, item.Text+"\n")
+		}
+	case "reasoning":
+		// Reasoning text - display as text
+		if item.Text != "" {
+			FormatTextDelta(w, item.Text+"\n")
+		}
+	case "command_execution", "mcp_tool_call", "file_change", "web_search":
+		// Mark tool as complete
+		toolName := state.ActiveTools[item.ID]
+		if toolName != "" && !state.CompletedTools[item.ID] {
+			state.CompletedTools[item.ID] = true
+			FormatToolComplete(w, toolName)
+		}
+	case "plan_update":
+		// Plan updates can be displayed as text if desired
+		if item.Text != "" {
+			FormatTextDelta(w, item.Text+"\n")
 		}
 	}
 }

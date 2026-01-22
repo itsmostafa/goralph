@@ -113,6 +113,25 @@ type CodexEvent struct {
 	Type string `json:"type"`
 }
 
+// CodexThreadStartedEvent represents a thread.started event from Codex CLI
+type CodexThreadStartedEvent struct {
+	Type     string `json:"type"`
+	ThreadID string `json:"thread_id"`
+}
+
+// CodexTurnCompletedEvent represents a turn.completed event from Codex CLI
+type CodexTurnCompletedEvent struct {
+	Type  string     `json:"type"`
+	Usage CodexUsage `json:"usage,omitempty"`
+}
+
+// CodexUsage represents token usage statistics from Codex CLI
+type CodexUsage struct {
+	InputTokens       int `json:"input_tokens"`
+	CachedInputTokens int `json:"cached_input_tokens"`
+	OutputTokens      int `json:"output_tokens"`
+}
+
 // CodexErrorEvent represents an error event from Codex CLI
 type CodexErrorEvent struct {
 	Type    string `json:"type"`
@@ -120,8 +139,18 @@ type CodexErrorEvent struct {
 	Code    string `json:"code,omitempty"`
 }
 
-// CodexItemEvent represents an item.* event from Codex CLI
+// CodexItemEvent represents an item.started or item.completed event from Codex CLI
 type CodexItemEvent struct {
-	Type    string `json:"type"`
-	Content any    `json:"content,omitempty"`
+	Type string    `json:"type"`
+	Item CodexItem `json:"item"`
+}
+
+// CodexItem represents an item object within item.* events
+type CodexItem struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"` // agent_message, reasoning, command_execution, file_change, mcp_tool_call, web_search, plan_update
+	Status  string `json:"status,omitempty"`
+	Text    string `json:"text,omitempty"`
+	Command string `json:"command,omitempty"`
+	Name    string `json:"name,omitempty"` // For MCP tool calls
 }
