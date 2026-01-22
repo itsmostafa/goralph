@@ -71,7 +71,7 @@ func Run(cfg Config) error {
 		FormatLoopBanner(cfg.Output, iteration)
 
 		// Run Claude iteration
-		if err := runClaudeIteration(cfg.PromptFile, cfg.Output); err != nil {
+		if err := runClaudeIteration(cfg); err != nil {
 			return fmt.Errorf("claude iteration failed: %w", err)
 		}
 
@@ -114,7 +114,7 @@ func ensureImplementationPlan() error {
 }
 
 // buildPromptWithPlan reads the prompt file and appends the implementation plan with instructions
-func buildPromptWithPlan(promptFile string) ([]byte, error) {
+func buildPromptWithPlan(promptFile string, maxIterations int) ([]byte, error) {
 	// Read the prompt file
 	promptContent, err := os.ReadFile(promptFile)
 	if err != nil {
@@ -127,6 +127,14 @@ func buildPromptWithPlan(promptFile string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read implementation plan: %w", err)
 	}
 
+	// Build task guidance based on whether max iterations is set
+	var taskGuidance string
+	if maxIterations > 0 {
+		taskGuidance = fmt.Sprintf(`If the Tasks section is empty, analyze the project and break the work into approximately %d tasks (one per iteration).`, maxIterations)
+	} else {
+		taskGuidance = `If the Tasks section is empty, analyze the project and add a comprehensive list of implementation tasks.`
+	}
+
 	// Build instructions to append
 	instructions := `
 ---
@@ -135,7 +143,7 @@ func buildPromptWithPlan(promptFile string) ([]byte, error) {
 
 Study the implementation plan below. Pick the most important uncompleted task.
 
-If the Tasks section is empty, analyze the project and add a comprehensive list of implementation tasks.
+` + taskGuidance + `
 
 Complete ONE task, then:
 1. Update ` + "`" + ImplementationPlanFile + "`" + ` to mark the task as completed (move to Completed section)
@@ -155,9 +163,9 @@ The loop will automatically restart with a fresh context window.
 	return combined, nil
 }
 
-func runClaudeIteration(promptFile string, w io.Writer) error {
+func runClaudeIteration(cfg Config) error {
 	// Build prompt with implementation plan
-	promptContent, err := buildPromptWithPlan(promptFile)
+	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.MaxIterations)
 	if err != nil {
 		return err
 	}
@@ -214,10 +222,10 @@ func runClaudeIteration(promptFile string, w io.Writer) error {
 	stdin.Close()
 
 	// Show progress indicator
-	fmt.Fprintln(w, dimStyle.Render("Running Claude..."))
+	fmt.Fprintln(cfg.Output, dimStyle.Render("Running Claude..."))
 
 	// Parse JSON output and write to log file
-	if err := parseClaudeOutput(stdout, w, logFile); err != nil {
+	if err := parseClaudeOutput(stdout, cfg.Output, logFile); err != nil {
 		return fmt.Errorf("failed to parse output: %w", err)
 	}
 
