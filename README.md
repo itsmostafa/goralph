@@ -72,12 +72,18 @@ goralph build
 goralph build --max 20
 goralph build -n 20
 
+# Run without pushing changes after each iteration
+goralph build --no-push
+
 # Run the agentic loop in plan mode
 goralph plan
 
 # Run in plan mode with max 5 iterations
 goralph plan --max 5
 goralph plan -n 5
+
+# Combine flags
+goralph build -n 10 --no-push
 ```
 
 ### Options
@@ -85,6 +91,7 @@ goralph plan -n 5
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--max` | `-n` | Maximum number of iterations (0 = unlimited) |
+| `--no-push` | | Skip pushing changes after each iteration |
 
 ### Required Files
 
