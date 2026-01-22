@@ -107,3 +107,21 @@ func NewStreamState() *StreamState {
 		CompletedTools: make(map[string]bool),
 	}
 }
+
+// CodexEvent represents a generic event from Codex CLI JSON output
+type CodexEvent struct {
+	Type string `json:"type"`
+}
+
+// CodexErrorEvent represents an error event from Codex CLI
+type CodexErrorEvent struct {
+	Type    string `json:"type"`
+	Message string `json:"message,omitempty"`
+	Code    string `json:"code,omitempty"`
+}
+
+// CodexItemEvent represents an item.* event from Codex CLI
+type CodexItemEvent struct {
+	Type    string `json:"type"`
+	Content any    `json:"content,omitempty"`
+}

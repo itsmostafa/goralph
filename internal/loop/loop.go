@@ -1,8 +1,6 @@
 package loop
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -40,6 +38,12 @@ func Run(cfg Config) error {
 		cfg.Output = os.Stdout
 	}
 
+	// Create provider once at start
+	provider, err := NewProvider(cfg.CLI)
+	if err != nil {
+		return fmt.Errorf("failed to create provider: %w", err)
+	}
+
 	// Get current git branch
 	branch, err := getCurrentBranch()
 	if err != nil {
@@ -72,9 +76,9 @@ func Run(cfg Config) error {
 		// Show loop banner before iteration
 		FormatLoopBanner(cfg.Output, iteration)
 
-		// Run Claude iteration
-		if err := runClaudeIteration(cfg, iteration); err != nil {
-			return fmt.Errorf("claude iteration failed: %w", err)
+		// Run iteration using the provider
+		if err := runIteration(cfg, provider, iteration); err != nil {
+			return fmt.Errorf("%s iteration failed: %w", provider.Name(), err)
 		}
 
 		// Push changes unless --no-push is set
@@ -199,7 +203,7 @@ The loop will automatically restart with a fresh context window.
 	return combined, nil
 }
 
-func runClaudeIteration(cfg Config, iteration int) error {
+func runIteration(cfg Config, provider Provider, iteration int) error {
 	// Build prompt with implementation plan
 	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.Mode, iteration, cfg.MaxIterations)
 	if err != nil {
@@ -223,13 +227,11 @@ func runClaudeIteration(cfg Config, iteration int) error {
 	}
 	defer logFile.Close()
 
-	// Run claude with the prompt piped to stdin
-	cmd := exec.Command("claude",
-		"-p",
-		"--dangerously-skip-permissions",
-		"--output-format=stream-json",
-		"--verbose",
-	)
+	// Build the command using the provider
+	cmd, err := provider.BuildCommand(promptContent)
+	if err != nil {
+		return fmt.Errorf("failed to build command: %w", err)
+	}
 
 	// Set up stdin with prompt content
 	stdin, err := cmd.StdinPipe()
@@ -248,7 +250,7 @@ func runClaudeIteration(cfg Config, iteration int) error {
 
 	// Start the command
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start claude: %w", err)
+		return fmt.Errorf("failed to start %s: %w", provider.Name(), err)
 	}
 
 	// Write prompt to stdin and close
@@ -258,134 +260,28 @@ func runClaudeIteration(cfg Config, iteration int) error {
 	stdin.Close()
 
 	// Show progress indicator
-	fmt.Fprintln(cfg.Output, dimStyle.Render("Running Claude..."))
+	fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Running %s...", provider.Name())))
 
-	// Parse JSON output and write to log file
-	if err := parseClaudeOutput(stdout, cfg.Output, logFile); err != nil {
+	// Parse output using the provider and write to log file
+	resultMsg, err := provider.ParseOutput(stdout, cfg.Output, logFile)
+	if err != nil {
 		return fmt.Errorf("failed to parse output: %w", err)
 	}
 
 	// Wait for completion
 	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("claude exited with error: %w", err)
-	}
-
-	return nil
-}
-
-func parseClaudeOutput(r io.Reader, w io.Writer, logFile io.Writer) error {
-	scanner := bufio.NewScanner(r)
-	// Increase buffer size for large JSON lines
-	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, 1024*1024)
-
-	var resultMsg *ResultMessage
-	state := NewStreamState()
-
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if len(line) == 0 {
-			continue
-		}
-
-		// Write raw JSON line to log file
-		if logFile != nil {
-			logFile.Write(line)
-			logFile.Write([]byte("\n"))
-		}
-
-		// Parse the type field first
-		var msg Message
-		if err := json.Unmarshal(line, &msg); err != nil {
-			// Not valid JSON, skip
-			continue
-		}
-
-		switch msg.Type {
-		case "result":
-			// Parse full result message
-			var result ResultMessage
-			if err := json.Unmarshal(line, &result); err != nil {
-				continue
-			}
-			resultMsg = &result
-
-		case "assistant":
-			// Stream assistant content
-			processAssistantMessage(line, w, state)
-
-		case "user":
-			// Check for tool results to mark tools as complete
-			processUserMessage(line, w, state)
-
-		case "system":
-			// System messages (session info, etc.)
-			// Could log these if verbose mode is desired
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return err
+		return fmt.Errorf("%s exited with error: %w", provider.Name(), err)
 	}
 
 	// Display the final result summary
-	fmt.Fprintln(w)
+	fmt.Fprintln(cfg.Output)
 	if resultMsg != nil {
-		FormatIterationSummary(w, *resultMsg)
+		FormatIterationSummary(cfg.Output, *resultMsg)
 	} else {
-		fmt.Fprintln(w, dimStyle.Render("Warning: No result message received from Claude"))
+		fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: No result message received from %s", provider.Name())))
 	}
 
 	return nil
-}
-
-// processAssistantMessage extracts and streams content from assistant messages
-func processAssistantMessage(line []byte, w io.Writer, state *StreamState) {
-	var assistantMsg AssistantMessage
-	if err := json.Unmarshal(line, &assistantMsg); err != nil {
-		return
-	}
-
-	// Build the full text from all text blocks
-	var fullText strings.Builder
-	for _, block := range assistantMsg.Message.Content {
-		switch block.Type {
-		case "text":
-			fullText.WriteString(block.Text)
-		case "tool_use":
-			// Track and display tool invocations
-			if block.ID != "" && state.ActiveTools[block.ID] == "" {
-				state.ActiveTools[block.ID] = block.Name
-				FormatToolStart(w, block.Name)
-			}
-		}
-	}
-
-	// Calculate and output the delta (new text since last message)
-	currentText := fullText.String()
-	if len(currentText) > state.LastTextLen {
-		delta := currentText[state.LastTextLen:]
-		FormatTextDelta(w, delta)
-		state.LastTextLen = len(currentText)
-	}
-}
-
-// processUserMessage checks for tool results and marks tools as complete
-func processUserMessage(line []byte, w io.Writer, state *StreamState) {
-	var userMsg UserMessage
-	if err := json.Unmarshal(line, &userMsg); err != nil {
-		return
-	}
-
-	for _, block := range userMsg.Message.Content {
-		if block.Type == "tool_result" && block.ToolUseID != "" {
-			toolName := state.ActiveTools[block.ToolUseID]
-			if toolName != "" && !state.CompletedTools[block.ToolUseID] {
-				state.CompletedTools[block.ToolUseID] = true
-				FormatToolComplete(w, toolName)
-			}
-		}
-	}
 }
 
 func pushChanges(branch string) error {
