@@ -6,6 +6,7 @@ import (
 )
 
 var buildMaxIterations int
+var buildNoPush bool
 
 var buildCmd = &cobra.Command{
 	Use:   "build",
@@ -16,6 +17,7 @@ var buildCmd = &cobra.Command{
 			Mode:          loop.ModeBuild,
 			PromptFile:    ".ralph/PROMPT_build.md",
 			MaxIterations: buildMaxIterations,
+			NoPush:        buildNoPush,
 			Output:        cmd.OutOrStdout(),
 		})
 	},
@@ -23,5 +25,6 @@ var buildCmd = &cobra.Command{
 
 func init() {
 	buildCmd.Flags().IntVarP(&buildMaxIterations, "max", "n", 0, "Maximum number of iterations (0 = unlimited)")
+	buildCmd.Flags().BoolVar(&buildNoPush, "no-push", false, "Skip pushing changes after each iteration")
 	rootCmd.AddCommand(buildCmd)
 }

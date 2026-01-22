@@ -28,6 +28,7 @@ type Config struct {
 	Mode          Mode
 	PromptFile    string
 	MaxIterations int
+	NoPush        bool
 	Output        io.Writer
 }
 
@@ -71,13 +72,15 @@ func Run(cfg Config) error {
 		FormatLoopBanner(cfg.Output, iteration)
 
 		// Run Claude iteration
-		if err := runClaudeIteration(cfg); err != nil {
+		if err := runClaudeIteration(cfg, iteration); err != nil {
 			return fmt.Errorf("claude iteration failed: %w", err)
 		}
 
-		// Push changes
-		if err := pushChanges(branch); err != nil {
-			return fmt.Errorf("failed to push changes: %w", err)
+		// Push changes unless --no-push is set
+		if !cfg.NoPush {
+			if err := pushChanges(branch); err != nil {
+				return fmt.Errorf("failed to push changes: %w", err)
+			}
 		}
 	}
 
@@ -112,7 +115,7 @@ func resetImplementationPlan() error {
 }
 
 // buildPromptWithPlan reads the prompt file and appends the implementation plan with instructions
-func buildPromptWithPlan(promptFile string, maxIterations int) ([]byte, error) {
+func buildPromptWithPlan(promptFile string, mode Mode, iteration int, maxIterations int) ([]byte, error) {
 	// Read the prompt file
 	promptContent, err := os.ReadFile(promptFile)
 	if err != nil {
@@ -124,6 +127,39 @@ func buildPromptWithPlan(promptFile string, maxIterations int) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read implementation plan: %w", err)
 	}
+
+	// Build iteration display string
+	var iterationStr string
+	if maxIterations > 0 {
+		iterationStr = fmt.Sprintf("%d/%d", iteration, maxIterations)
+	} else {
+		iterationStr = fmt.Sprintf("%d/unlimited", iteration)
+	}
+
+	// Build system context
+	systemContext := fmt.Sprintf(`# System Context
+
+You are running in a **goralph agentic loop** - an automated iteration system that manages your context between runs.
+
+**Key facts:**
+- Iteration: %s
+- Mode: %s
+- Each iteration runs with a fresh context window
+- Focus on completing ONE task per iteration
+- After completing a task: update the implementation plan, commit changes, then exit
+- The loop will automatically restart and push your changes
+
+**Workflow:**
+1. Study the implementation plan below
+2. Pick the most important uncompleted task
+3. Complete that single task
+4. Update the implementation plan to mark it complete
+5. Commit with a descriptive message
+6. Exit - the loop handles the rest
+
+---
+
+`, iterationStr, mode)
 
 	// Build task guidance based on whether max iterations is set
 	var taskGuidance string
@@ -156,14 +192,15 @@ The loop will automatically restart with a fresh context window.
 
 ` + "```markdown\n" + string(planContent) + "\n```"
 
-	// Combine prompt + instructions + plan
-	combined := append(promptContent, []byte(instructions)...)
+	// Combine system context + prompt + instructions + plan
+	combined := append([]byte(systemContext), promptContent...)
+	combined = append(combined, []byte(instructions)...)
 	return combined, nil
 }
 
-func runClaudeIteration(cfg Config) error {
+func runClaudeIteration(cfg Config, iteration int) error {
 	// Build prompt with implementation plan
-	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.MaxIterations)
+	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.Mode, iteration, cfg.MaxIterations)
 	if err != nil {
 		return err
 	}

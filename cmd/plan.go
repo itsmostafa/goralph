@@ -6,6 +6,7 @@ import (
 )
 
 var planMaxIterations int
+var planNoPush bool
 
 var planCmd = &cobra.Command{
 	Use:   "plan",
@@ -16,6 +17,7 @@ var planCmd = &cobra.Command{
 			Mode:          loop.ModePlan,
 			PromptFile:    ".ralph/PROMPT_plan.md",
 			MaxIterations: planMaxIterations,
+			NoPush:        planNoPush,
 			Output:        cmd.OutOrStdout(),
 		})
 	},
@@ -23,5 +25,6 @@ var planCmd = &cobra.Command{
 
 func init() {
 	planCmd.Flags().IntVarP(&planMaxIterations, "max", "n", 0, "Maximum number of iterations (0 = unlimited)")
+	planCmd.Flags().BoolVar(&planNoPush, "no-push", false, "Skip pushing changes after each iteration")
 	rootCmd.AddCommand(planCmd)
 }
