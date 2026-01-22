@@ -1,6 +1,30 @@
 package loop
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+)
+
+// Mode represents the execution mode
+type Mode string
+
+const (
+	ModeBuild Mode = "build"
+	ModePlan  Mode = "plan"
+
+	// ImplementationPlanFile is the path to the implementation plan
+	ImplementationPlanFile = ".ralph/IMPLEMENTATION_PLAN.md"
+)
+
+// Config holds the loop configuration
+type Config struct {
+	Mode          Mode
+	PromptFile    string
+	MaxIterations int
+	NoPush        bool
+	CLI           CLIProvider
+	Output        io.Writer
+}
 
 // CLIProvider represents the CLI provider to use
 type CLIProvider string
