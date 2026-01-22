@@ -3,6 +3,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)](https://claude.ai/code)
+[![Releases](https://img.shields.io/github/v/release/itsmostafa/goralph)](https://github.com/itsmostafa/goralph/releases)
 
 <p align="center">
   <img src="assets/img/goralph-logo.png" alt="Go Ralph Logo" width="200">
@@ -30,11 +31,17 @@ Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wig
 - [Go 1.25](https://go.dev/doc/install)
 - [Task](https://github.com/go-task/task) (optional) - for running task commands like `task run`
 
-## Setup
+## Installation
+
+### Option 1: Download Pre-built Binary
+
+Download the latest release for your platform from the [Releases page](https://github.com/itsmostafa/goralph/releases).
+
+### Option 2: Build from Source
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/goralph.git
+   git clone https://github.com/itsmostafa/goralph.git
    cd goralph
    ```
 
