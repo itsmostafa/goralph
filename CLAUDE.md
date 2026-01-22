@@ -21,6 +21,7 @@ goralph build          # Run agentic loop in build mode
 goralph plan           # Run agentic loop in plan mode
 goralph build -n 5     # Run with max 5 iterations (tasks broken into ~5 pieces)
 goralph plan --max 10  # Run with max 10 iterations (tasks broken into ~10 pieces)
+goralph build --no-push  # Run without pushing changes after each iteration
 ```
 
 ## How It Works
@@ -29,7 +30,7 @@ goralph plan --max 10  # Run with max 10 iterations (tasks broken into ~10 piece
 2. **Appends implementation plan** from `.ralph/IMPLEMENTATION_PLAN.md` with instructions
 3. **Runs Claude Code** with the combined prompt, streaming output in real-time
 4. **Claude completes one task**, updates the implementation plan, and commits
-5. **Pushes changes** to the remote branch
+5. **Pushes changes** to the remote branch (unless `--no-push` is set)
 6. **Loops** until max iterations reached or all tasks complete
 
 ### Iteration-Aware Task Generation
