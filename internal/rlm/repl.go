@@ -114,6 +114,11 @@ func (r *REPLExecutor) setupEnvironment(vm *goja.Runtime, printOutput *strings.B
 		return fmt.Errorf("failed to setup regex module: %w", err)
 	}
 
+	// Set up the filesystem module for codebase exploration
+	if err := SetupFSModule(vm, r.env.FS); err != nil {
+		return fmt.Errorf("failed to setup fs module: %w", err)
+	}
+
 	// Set up user variables from previous executions
 	for name, value := range r.env.Variables {
 		if err := vm.Set(name, value); err != nil {
@@ -365,7 +370,7 @@ func isReservedWord(name string) bool {
 		"null": true, "undefined": true,
 		// Built-ins from our environment
 		"context": true, "query": true, "print": true, "console": true,
-		"re": true, "recursiveLLM": true,
+		"re": true, "fs": true, "recursiveLLM": true,
 	}
 	return reserved[name]
 }

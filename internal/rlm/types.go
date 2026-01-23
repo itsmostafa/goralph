@@ -71,6 +71,9 @@ type Environment struct {
 	// RE provides access to regex functions
 	RE *RegexModule
 
+	// FS provides access to filesystem functions for codebase exploration
+	FS *FSModule
+
 	// RecursiveLLM is a function to spawn sub-RLM calls
 	RecursiveLLM func(subQuery, subContext string) (string, error)
 
@@ -88,6 +91,7 @@ func NewEnvironment(context, query string) *Environment {
 		Query:     query,
 		Variables: make(map[string]any),
 		RE:        &RegexModule{},
+		FS:        NewFSModule(),
 	}
 }
 
