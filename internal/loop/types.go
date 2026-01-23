@@ -29,9 +29,10 @@ type Config struct {
 	Output        io.Writer
 }
 
-// GeneratePlanPath returns a timestamped path for a new session-scoped plan file
+// GeneratePlanPath returns a timestamped path for a new session-scoped plan file.
+// Uses millisecond precision to ensure uniqueness for parallel invocations.
 func GeneratePlanPath() string {
-	timestamp := time.Now().Format("20060102T150405")
+	timestamp := time.Now().Format("20060102T150405.000")
 	return filepath.Join(PlansDir, fmt.Sprintf("implementation_plan_%s.md", timestamp))
 }
 
