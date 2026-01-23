@@ -28,6 +28,8 @@ func NewProvider(agent AgentProvider) (Provider, error) {
 		return &ClaudeProvider{}, nil
 	case AgentCodex:
 		return &CodexProvider{}, nil
+	case AgentRLM:
+		return &RLMProvider{}, nil
 	default:
 		return nil, fmt.Errorf("unknown agent provider: %s", agent)
 	}
@@ -362,4 +364,38 @@ func processCodexItemCompleted(line []byte, w io.Writer, state *StreamState) {
 			state.AccumulatedText.WriteString(item.Text)
 		}
 	}
+}
+
+// RLMProvider implements Provider for Recursive Language Model agent
+// RLM enables handling of large contexts by storing them as variables
+// and allowing the model to explore them programmatically through a REPL.
+type RLMProvider struct {
+	prompt []byte
+}
+
+// Name returns the provider name
+func (p *RLMProvider) Name() string {
+	return "rlm"
+}
+
+// Model returns the model being used
+func (p *RLMProvider) Model() string {
+	return "rlm (claude-sonnet-4-20250514)"
+}
+
+// BuildCommand creates the RLM command
+// Note: RLM doesn't use external CLI tools - it uses direct API calls.
+// This returns a placeholder that will be handled specially in the loop.
+func (p *RLMProvider) BuildCommand(prompt []byte) (*exec.Cmd, error) {
+	p.prompt = prompt
+	// RLM provider doesn't use external commands - return an error to signal
+	// that this provider requires special handling in the loop
+	return nil, fmt.Errorf("RLM provider does not use external commands - requires direct API integration")
+}
+
+// ParseOutput parses RLM output
+// Note: RLM handles its own output internally through the REPL loop
+func (p *RLMProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer) (*ResultMessage, error) {
+	// RLM provider handles output internally - this should not be called
+	return nil, fmt.Errorf("RLM provider handles output internally")
 }

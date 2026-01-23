@@ -47,6 +47,7 @@ type AgentProvider string
 const (
 	AgentClaude AgentProvider = "claude"
 	AgentCodex  AgentProvider = "codex"
+	AgentRLM    AgentProvider = "rlm"
 )
 
 // ValidateAgentProvider checks if the given agent provider is valid
@@ -56,8 +57,10 @@ func ValidateAgentProvider(agent string) (AgentProvider, error) {
 		return AgentClaude, nil
 	case AgentCodex:
 		return AgentCodex, nil
+	case AgentRLM:
+		return AgentRLM, nil
 	default:
-		return "", fmt.Errorf("unknown agent provider: %q (valid options: claude, codex)", agent)
+		return "", fmt.Errorf("unknown agent provider: %q (valid options: claude, codex, rlm)", agent)
 	}
 }
 

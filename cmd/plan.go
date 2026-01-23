@@ -43,7 +43,7 @@ func init() {
 	if envAgent := os.Getenv("GORALPH_AGENT"); envAgent != "" {
 		defaultAgent = envAgent
 	}
-	planCmd.Flags().StringVar(&planAgent, "agent", defaultAgent, "Agent provider to use (claude, codex)")
+	planCmd.Flags().StringVar(&planAgent, "agent", defaultAgent, "Agent provider to use (claude, codex, rlm)")
 
 	rootCmd.AddCommand(planCmd)
 }
