@@ -33,7 +33,7 @@ GORALPH_AGENT=codex  # Set default agent provider (claude or codex)
 ## How It Works
 
 1. **Reads prompt file** from `.ralph/PROMPT_build.md` or `.ralph/PROMPT_plan.md`
-2. **Appends implementation plan** from `.ralph/IMPLEMENTATION_PLAN.md` with instructions
+2. **Creates session-scoped plan** in `.ralph/plans/implementation_plan_{timestamp}.md`
 3. **Runs the selected agent** (Claude Code or Codex) with the combined prompt, streaming output in real-time
 4. **Agent completes one task**, updates the implementation plan, and commits
 5. **Pushes changes** to the remote branch (unless `--no-push` is set)
@@ -56,14 +56,15 @@ When using `--max`/`-n` flag:
   - `prompt.go` - Prompt file reading and construction
   - `git.go` - Git operations (push, branch management)
 - `internal/version/` - Version info (populated via ldflags at build time)
-- `.ralph/` - Prompt files and implementation plan
+- `.ralph/` - Prompt files and session data
+- `.ralph/plans/` - Session-scoped implementation plans (timestamped)
 - `.ralph/logs/` - Timestamped JSONL logs of each agent session
 
 ## Required Files
 
 - `.ralph/PROMPT_build.md` - Build mode prompt for the agentic loop
 - `.ralph/PROMPT_plan.md` - Plan mode prompt for the agentic loop
-- `.ralph/IMPLEMENTATION_PLAN.md` - Task tracking file (auto-created if missing)
+- `.ralph/plans/` - Directory for session-scoped implementation plans (auto-created)
 - `taskfile.yml` - Task runner configuration
 
 ## Dependencies

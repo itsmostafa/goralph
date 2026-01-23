@@ -3,6 +3,8 @@ package loop
 import (
 	"fmt"
 	"io"
+	"path/filepath"
+	"time"
 )
 
 // Mode represents the execution mode
@@ -12,18 +14,26 @@ const (
 	ModeBuild Mode = "build"
 	ModePlan  Mode = "plan"
 
-	// ImplementationPlanFile is the path to the implementation plan
-	ImplementationPlanFile = ".ralph/IMPLEMENTATION_PLAN.md"
+	// PlansDir is the directory for session-scoped implementation plans
+	PlansDir = ".ralph/plans"
 )
 
 // Config holds the loop configuration
 type Config struct {
 	Mode          Mode
 	PromptFile    string
+	PlanFile      string // Session-scoped plan file path
 	MaxIterations int
 	NoPush        bool
 	Agent         AgentProvider
 	Output        io.Writer
+}
+
+// GeneratePlanPath returns a timestamped path for a new session-scoped plan file.
+// Uses millisecond precision to ensure uniqueness for parallel invocations.
+func GeneratePlanPath() string {
+	timestamp := time.Now().Format("20060102T150405.000")
+	return filepath.Join(PlansDir, fmt.Sprintf("implementation_plan_%s.md", timestamp))
 }
 
 // AgentProvider represents the agent provider to use
