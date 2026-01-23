@@ -135,28 +135,40 @@ func processClaudeAssistantMessage(line []byte, w io.Writer, state *StreamState)
 		return
 	}
 
-	// Build the full text from all text blocks
+	// First pass: accumulate all text
 	var fullText strings.Builder
 	for _, block := range assistantMsg.Message.Content {
-		switch block.Type {
-		case "text":
+		if block.Type == "text" {
 			fullText.WriteString(block.Text)
 			state.AccumulatedText.WriteString(block.Text)
-		case "tool_use":
-			// Track and display tool invocations
-			if block.ID != "" && state.ActiveTools[block.ID] == "" {
-				state.ActiveTools[block.ID] = block.Name
-				FormatToolStart(w, block.Name)
-			}
 		}
 	}
 
-	// Calculate and output the delta (new text since last message)
+	// Output text delta BEFORE processing tools
 	currentText := fullText.String()
 	if len(currentText) > state.LastTextLen {
 		delta := currentText[state.LastTextLen:]
 		FormatTextDelta(w, delta)
 		state.LastTextLen = len(currentText)
+		// Mark that we need a newline before tool output if text doesn't end with one
+		if len(delta) > 0 && delta[len(delta)-1] != '\n' {
+			state.NeedsNewline = true
+		}
+	}
+
+	// Second pass: process tool_use blocks
+	for _, block := range assistantMsg.Message.Content {
+		if block.Type == "tool_use" {
+			if block.ID != "" && state.ActiveTools[block.ID] == "" {
+				state.ActiveTools[block.ID] = block.Name
+				// Add newline before tool if needed (text didn't end with one)
+				if state.NeedsNewline {
+					fmt.Fprintln(w)
+					state.NeedsNewline = false
+				}
+				FormatToolStart(w, block.Name)
+			}
+		}
 	}
 }
 
@@ -173,6 +185,7 @@ func processClaudeUserMessage(line []byte, w io.Writer, state *StreamState) {
 			if toolName != "" && !state.CompletedTools[block.ToolUseID] {
 				state.CompletedTools[block.ToolUseID] = true
 				FormatToolComplete(w, toolName)
+				state.NeedsNewline = false // Tool complete ends with newline
 			}
 		}
 	}

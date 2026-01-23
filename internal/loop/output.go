@@ -169,7 +169,7 @@ func FormatTextDelta(w io.Writer, text string) {
 func FormatToolStart(w io.Writer, toolName string) {
 	indicator := toolActiveStyle.Render("●")
 	name := toolNameStyle.Render(toolName)
-	fmt.Fprintf(w, "\n%s %s running...\n", indicator, name)
+	fmt.Fprintf(w, "%s %s running...\n", indicator, name)
 }
 
 // FormatToolComplete writes a tool completion indicator
