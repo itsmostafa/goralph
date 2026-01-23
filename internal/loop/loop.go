@@ -15,7 +15,7 @@ func Run(cfg Config) error {
 	}
 
 	// Create provider once at start
-	provider, err := NewProvider(cfg.CLI)
+	provider, err := NewProvider(cfg.Agent)
 	if err != nil {
 		return fmt.Errorf("failed to create provider: %w", err)
 	}

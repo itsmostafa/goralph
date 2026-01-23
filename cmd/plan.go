@@ -9,15 +9,15 @@ import (
 
 var planMaxIterations int
 var planNoPush bool
-var planCLI string
+var planAgent string
 
 var planCmd = &cobra.Command{
 	Use:   "plan",
 	Short: "Run the agentic loop in plan mode",
 	Long:  `Run Claude Code in plan mode using .ralph/PROMPT_plan.md as the prompt file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Validate CLI provider
-		cliProvider, err := loop.ValidateCLIProvider(planCLI)
+		// Validate agent provider
+		agentProvider, err := loop.ValidateAgentProvider(planAgent)
 		if err != nil {
 			return err
 		}
@@ -27,7 +27,7 @@ var planCmd = &cobra.Command{
 			PromptFile:    ".ralph/PROMPT_plan.md",
 			MaxIterations: planMaxIterations,
 			NoPush:        planNoPush,
-			CLI:           cliProvider,
+			Agent:         agentProvider,
 			Output:        cmd.OutOrStdout(),
 		})
 	},
@@ -37,12 +37,12 @@ func init() {
 	planCmd.Flags().IntVarP(&planMaxIterations, "max", "n", 0, "Maximum number of iterations (0 = unlimited)")
 	planCmd.Flags().BoolVar(&planNoPush, "no-push", false, "Skip pushing changes after each iteration")
 
-	// CLI provider flag with env var fallback
-	defaultCLI := "claude"
-	if envCLI := os.Getenv("GORALPH_CLI"); envCLI != "" {
-		defaultCLI = envCLI
+	// Agent provider flag with env var fallback
+	defaultAgent := "claude"
+	if envAgent := os.Getenv("GORALPH_AGENT"); envAgent != "" {
+		defaultAgent = envAgent
 	}
-	planCmd.Flags().StringVar(&planCLI, "cli", defaultCLI, "CLI provider to use (claude, codex)")
+	planCmd.Flags().StringVar(&planAgent, "agent", defaultAgent, "Agent provider to use (claude, codex)")
 
 	rootCmd.AddCommand(planCmd)
 }

@@ -22,27 +22,27 @@ type Config struct {
 	PromptFile    string
 	MaxIterations int
 	NoPush        bool
-	CLI           CLIProvider
+	Agent         AgentProvider
 	Output        io.Writer
 }
 
-// CLIProvider represents the CLI provider to use
-type CLIProvider string
+// AgentProvider represents the agent provider to use
+type AgentProvider string
 
 const (
-	CLIClaude CLIProvider = "claude"
-	CLICodex  CLIProvider = "codex"
+	AgentClaude AgentProvider = "claude"
+	AgentCodex  AgentProvider = "codex"
 )
 
-// ValidateCLIProvider checks if the given CLI provider is valid
-func ValidateCLIProvider(cli string) (CLIProvider, error) {
-	switch CLIProvider(cli) {
-	case CLIClaude:
-		return CLIClaude, nil
-	case CLICodex:
-		return CLICodex, nil
+// ValidateAgentProvider checks if the given agent provider is valid
+func ValidateAgentProvider(agent string) (AgentProvider, error) {
+	switch AgentProvider(agent) {
+	case AgentClaude:
+		return AgentClaude, nil
+	case AgentCodex:
+		return AgentCodex, nil
 	default:
-		return "", fmt.Errorf("unknown CLI provider: %q (valid options: claude, codex)", cli)
+		return "", fmt.Errorf("unknown agent provider: %q (valid options: claude, codex)", agent)
 	}
 }
 

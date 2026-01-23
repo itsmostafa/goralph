@@ -65,15 +65,15 @@ func FormatHeader(w io.Writer, cfg Config, branch string) {
 		maxLine = fmt.Sprintf("\n%s %d iterations", dimStyle.Render("Max:"), cfg.MaxIterations)
 	}
 
-	// Display CLI provider (default to "claude" if not set)
-	cliName := string(cfg.CLI)
-	if cliName == "" {
-		cliName = "claude"
+	// Display agent provider (default to "claude" if not set)
+	agentName := string(cfg.Agent)
+	if agentName == "" {
+		agentName = "claude"
 	}
 
 	content := fmt.Sprintf("%s %s  %s %s\n%s %s\n%s %s%s",
 		dimStyle.Render("Mode:"), titleStyle.Render(string(cfg.Mode)),
-		dimStyle.Render("CLI:"), titleStyle.Render(cliName),
+		dimStyle.Render("Agent:"), titleStyle.Render(agentName),
 		dimStyle.Render("Prompt:"), cfg.PromptFile,
 		dimStyle.Render("Branch:"), successStyle.Render(branch),
 		maxLine,

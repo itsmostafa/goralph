@@ -9,29 +9,29 @@ import (
 	"strings"
 )
 
-// Provider defines the interface for CLI providers
+// Provider defines the interface for agent providers
 type Provider interface {
 	// Name returns the provider name for display purposes
 	Name() string
 	// BuildCommand creates the command to execute with the given prompt
 	BuildCommand(prompt []byte) (*exec.Cmd, error)
-	// ParseOutput parses the CLI output and returns the result summary
+	// ParseOutput parses the agent output and returns the result summary
 	ParseOutput(r io.Reader, w io.Writer, logFile io.Writer) (*ResultMessage, error)
 }
 
-// NewProvider creates a new Provider instance based on the CLI type
-func NewProvider(cli CLIProvider) (Provider, error) {
-	switch cli {
-	case CLIClaude:
+// NewProvider creates a new Provider instance based on the agent type
+func NewProvider(agent AgentProvider) (Provider, error) {
+	switch agent {
+	case AgentClaude:
 		return &ClaudeProvider{}, nil
-	case CLICodex:
+	case AgentCodex:
 		return &CodexProvider{}, nil
 	default:
-		return nil, fmt.Errorf("unknown CLI provider: %s", cli)
+		return nil, fmt.Errorf("unknown agent provider: %s", agent)
 	}
 }
 
-// ClaudeProvider implements Provider for Claude Code CLI
+// ClaudeProvider implements Provider for Claude Code agent
 type ClaudeProvider struct {
 	prompt []byte
 }
@@ -161,7 +161,7 @@ func processClaudeUserMessage(line []byte, w io.Writer, state *StreamState) {
 	}
 }
 
-// CodexProvider implements Provider for OpenAI Codex CLI
+// CodexProvider implements Provider for OpenAI Codex agent
 type CodexProvider struct {
 	prompt []byte
 }
