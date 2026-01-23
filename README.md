@@ -17,7 +17,7 @@ Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wig
 
 - **Multi-Agent Support** - Choose between Claude Code and OpenAI Codex CLI as your agent provider
 - **Build and Plan Modes** - Two execution modes with dedicated prompt files for different workflows
-- **Implementation Plan Tracking** - Auto-manages `.ralph/IMPLEMENTATION_PLAN.md` for task tracking across iterations
+- **Session-Scoped Implementation Plans** - Creates timestamped plan files in `.ralph/plans/` for each session
 - **Iteration-Aware Task Generation** - When using `-n`/`--max`, the agent breaks work into approximately N tasks
 - **Configurable Iteration Limits** - Set maximum iterations with `-n`/`--max` flag or run unlimited
 - **Automatic Git Pushes** - Pushes changes to remote after each iteration, auto-creates remote branches
@@ -111,7 +111,7 @@ Before running, ensure these prompt files exist in your `.ralph/` directory:
 
 - `.ralph/PROMPT_build.md` - Prompt used for build mode
 - `.ralph/PROMPT_plan.md` - Prompt used for plan mode
-- `.ralph/IMPLEMENTATION_PLAN.md` - Task tracking file (auto-created if missing)
+- `.ralph/plans/` - Directory for session-scoped implementation plans (auto-created)
 
 ### Warning
 
