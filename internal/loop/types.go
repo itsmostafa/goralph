@@ -3,7 +3,9 @@ package loop
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Mode represents the execution mode
@@ -13,21 +15,28 @@ const (
 	ModeBuild Mode = "build"
 	ModePlan  Mode = "plan"
 
-	// ImplementationPlanFile is the path to the implementation plan
-	ImplementationPlanFile = ".ralph/IMPLEMENTATION_PLAN.md"
-
 	// CompletionPromise is the pattern agents emit to signal all tasks are complete
 	CompletionPromise = "<promise>COMPLETE</promise>"
+	// PlansDir is the directory for session-scoped implementation plans
+	PlansDir = ".ralph/plans"
 )
 
 // Config holds the loop configuration
 type Config struct {
 	Mode          Mode
 	PromptFile    string
+	PlanFile      string // Session-scoped plan file path
 	MaxIterations int
 	NoPush        bool
 	Agent         AgentProvider
 	Output        io.Writer
+}
+
+// GeneratePlanPath returns a timestamped path for a new session-scoped plan file.
+// Uses millisecond precision to ensure uniqueness for parallel invocations.
+func GeneratePlanPath() string {
+	timestamp := time.Now().Format("20060102T150405.000")
+	return filepath.Join(PlansDir, fmt.Sprintf("implementation_plan_%s.md", timestamp))
 }
 
 // AgentProvider represents the agent provider to use
@@ -66,13 +75,13 @@ type SystemMessage struct {
 
 // ResultMessage represents the final result message from Claude
 type ResultMessage struct {
-	Type         string  `json:"type"`
-	Subtype      string  `json:"subtype"`
-	IsError      bool    `json:"is_error"`
-	DurationMs   int     `json:"duration_ms"`
-	NumTurns     int     `json:"num_turns"`
-	Result       string  `json:"result"`
-	TotalCostUSD float64 `json:"total_cost_usd"`
+	Type            string  `json:"type"`
+	Subtype         string  `json:"subtype"`
+	IsError         bool    `json:"is_error"`
+	DurationMs      int     `json:"duration_ms"`
+	NumTurns        int     `json:"num_turns"`
+	Result          string  `json:"result"`
+	TotalCostUSD    float64 `json:"total_cost_usd"`
 	Usage           Usage   `json:"usage"`
 	HasCost         bool    `json:"-"` // Internal field: true if provider supplies cost data
 	SessionComplete bool    `json:"-"` // Internal: true if agent emitted completion promise
@@ -153,7 +162,7 @@ type CodexThreadStartedEvent struct {
 // CodexTurnCompletedEvent represents a turn.completed event from Codex CLI
 type CodexTurnCompletedEvent struct {
 	Type  string     `json:"type"`
-	Usage CodexUsage `json:"usage,omitempty"`
+	Usage CodexUsage `json:"usage,omitzero"`
 }
 
 // CodexUsage represents token usage statistics from Codex CLI

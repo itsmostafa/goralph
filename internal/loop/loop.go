@@ -31,8 +31,13 @@ func Run(cfg Config) error {
 		return fmt.Errorf("prompt file not found: %s", cfg.PromptFile)
 	}
 
+	// Create plans directory if it doesn't exist
+	if err := os.MkdirAll(PlansDir, 0755); err != nil {
+		return fmt.Errorf("failed to create plans directory: %w", err)
+	}
+
 	// Reset implementation plan to initial template
-	if err := resetImplementationPlan(); err != nil {
+	if err := resetImplementationPlan(cfg.PlanFile); err != nil {
 		return err
 	}
 
@@ -75,7 +80,7 @@ func Run(cfg Config) error {
 
 func runIteration(cfg Config, provider Provider, iteration int) (bool, error) {
 	// Build prompt with implementation plan
-	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.Mode, iteration, cfg.MaxIterations)
+	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.PlanFile, cfg.Mode, iteration, cfg.MaxIterations)
 	if err != nil {
 		return false, err
 	}

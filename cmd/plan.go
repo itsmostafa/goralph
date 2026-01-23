@@ -25,6 +25,7 @@ var planCmd = &cobra.Command{
 		return loop.Run(loop.Config{
 			Mode:          loop.ModePlan,
 			PromptFile:    ".ralph/PROMPT_plan.md",
+			PlanFile:      loop.GeneratePlanPath(),
 			MaxIterations: planMaxIterations,
 			NoPush:        planNoPush,
 			Agent:         agentProvider,
