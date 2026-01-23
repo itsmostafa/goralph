@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -14,6 +15,8 @@ const (
 	ModeBuild Mode = "build"
 	ModePlan  Mode = "plan"
 
+	// CompletionPromise is the pattern agents emit to signal all tasks are complete
+	CompletionPromise = "<promise>COMPLETE</promise>"
 	// PlansDir is the directory for session-scoped implementation plans
 	PlansDir = ".ralph/plans"
 )
@@ -72,15 +75,16 @@ type SystemMessage struct {
 
 // ResultMessage represents the final result message from Claude
 type ResultMessage struct {
-	Type         string  `json:"type"`
-	Subtype      string  `json:"subtype"`
-	IsError      bool    `json:"is_error"`
-	DurationMs   int     `json:"duration_ms"`
-	NumTurns     int     `json:"num_turns"`
-	Result       string  `json:"result"`
-	TotalCostUSD float64 `json:"total_cost_usd"`
-	Usage        Usage   `json:"usage"`
-	HasCost      bool    `json:"-"` // Internal field: true if provider supplies cost data
+	Type            string  `json:"type"`
+	Subtype         string  `json:"subtype"`
+	IsError         bool    `json:"is_error"`
+	DurationMs      int     `json:"duration_ms"`
+	NumTurns        int     `json:"num_turns"`
+	Result          string  `json:"result"`
+	TotalCostUSD    float64 `json:"total_cost_usd"`
+	Usage           Usage   `json:"usage"`
+	HasCost         bool    `json:"-"` // Internal field: true if provider supplies cost data
+	SessionComplete bool    `json:"-"` // Internal: true if agent emitted completion promise
 }
 
 // Usage represents token usage statistics
@@ -130,9 +134,10 @@ type ToolResultBlock struct {
 
 // StreamState tracks the state during streaming output
 type StreamState struct {
-	LastTextLen    int
-	ActiveTools    map[string]string // tool ID -> tool name
-	CompletedTools map[string]bool
+	LastTextLen     int
+	ActiveTools     map[string]string // tool ID -> tool name
+	CompletedTools  map[string]bool
+	AccumulatedText strings.Builder // All text content for pattern detection
 }
 
 // NewStreamState creates a new StreamState with initialized maps
@@ -157,7 +162,7 @@ type CodexThreadStartedEvent struct {
 // CodexTurnCompletedEvent represents a turn.completed event from Codex CLI
 type CodexTurnCompletedEvent struct {
 	Type  string     `json:"type"`
-	Usage CodexUsage `json:"usage,omitempty"`
+	Usage CodexUsage `json:"usage,omitzero"`
 }
 
 // CodexUsage represents token usage statistics from Codex CLI

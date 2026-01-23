@@ -37,7 +37,16 @@ GORALPH_AGENT=codex  # Set default agent provider (claude or codex)
 3. **Runs the selected agent** (Claude Code or Codex) with the combined prompt, streaming output in real-time
 4. **Agent completes one task**, updates the implementation plan, and commits
 5. **Pushes changes** to the remote branch (unless `--no-push` is set)
-6. **Loops** until max iterations reached or all tasks complete
+6. **Loops** until max iterations reached, all tasks complete, or agent signals completion
+
+### Completion Promise
+
+Agents can signal that all tasks are complete by outputting the exact string:
+```
+<promise>COMPLETE</promise>
+```
+
+When detected, the loop exits gracefully with a "Session Complete" message instead of continuing to the next iteration. This saves tokens by avoiding unnecessary iterations when work is done.
 
 ### Iteration-Aware Task Generation
 

@@ -93,6 +93,11 @@ Complete ONE task, then:
 2. Commit your changes with a descriptive message
 3. Exit
 
+**Completion Promise:**
+When ALL tasks in the plan are complete and there is no more work to do, output this exact line:
+` + "`" + CompletionPromise + "`" + `
+This signals the loop to exit gracefully instead of continuing to the next iteration.
+
 The loop will automatically restart with a fresh context window.
 
 ---
