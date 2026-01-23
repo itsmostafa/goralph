@@ -6,7 +6,7 @@ import (
 )
 
 // resetImplementationPlan resets the implementation plan file to the initial template
-func resetImplementationPlan() error {
+func resetImplementationPlan(planFile string) error {
 	template := `# Implementation Plan
 
 ## Tasks
@@ -17,14 +17,14 @@ func resetImplementationPlan() error {
 
 <!-- Completed tasks will be moved here as: - [x] Task description -->
 `
-	if err := os.WriteFile(ImplementationPlanFile, []byte(template), 0644); err != nil {
+	if err := os.WriteFile(planFile, []byte(template), 0644); err != nil {
 		return fmt.Errorf("failed to reset implementation plan: %w", err)
 	}
 	return nil
 }
 
 // buildPromptWithPlan reads the prompt file and appends the implementation plan with instructions
-func buildPromptWithPlan(promptFile string, mode Mode, iteration int, maxIterations int) ([]byte, error) {
+func buildPromptWithPlan(promptFile string, planFile string, mode Mode, iteration int, maxIterations int) ([]byte, error) {
 	// Read the prompt file
 	promptContent, err := os.ReadFile(promptFile)
 	if err != nil {
@@ -32,7 +32,7 @@ func buildPromptWithPlan(promptFile string, mode Mode, iteration int, maxIterati
 	}
 
 	// Read the implementation plan
-	planContent, err := os.ReadFile(ImplementationPlanFile)
+	planContent, err := os.ReadFile(planFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read implementation plan: %w", err)
 	}
@@ -89,7 +89,7 @@ Study the implementation plan below. Pick the most important uncompleted task.
 ` + taskGuidance + `
 
 Complete ONE task, then:
-1. Update ` + "`" + ImplementationPlanFile + "`" + ` to mark the task as completed (move to Completed section)
+1. Update ` + "`" + planFile + "`" + ` to mark the task as completed (move to Completed section)
 2. Commit your changes with a descriptive message
 3. Exit
 
