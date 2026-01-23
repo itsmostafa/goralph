@@ -2,9 +2,9 @@
 
 ## Tasks
 
-- [ ] Inspect CLI entrypoints to confirm commands, flags, and agent modes beyond README
-- [ ] Identify runtime files/directories (e.g., `.ralph/`, logs) and summarize workflow lifecycle
+- [ ] Review internal loop/provider code to describe iteration flow and agent integrations.
+- [ ] Draft more detailed usage scenarios and configuration notes for end users.
 
 ## Completed
 
-- [x] Review README and top-level docs to explain repository purpose and basic usage
+- [x] Review README and repo structure to summarize purpose and usage.
