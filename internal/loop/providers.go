@@ -2,11 +2,14 @@ package loop
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
 	"strings"
+
+	"github.com/itsmostafa/goralph/internal/rlm"
 )
 
 // Provider defines the interface for agent providers
@@ -21,6 +24,15 @@ type Provider interface {
 	ParseOutput(r io.Reader, w io.Writer, logFile io.Writer) (*ResultMessage, error)
 }
 
+// DirectRunner is an optional interface for providers that run directly
+// without spawning external CLI processes.
+type DirectRunner interface {
+	Provider
+	// RunDirect executes the provider's logic directly with the given prompt.
+	// Returns the result message and whether the session is complete.
+	RunDirect(prompt []byte, output io.Writer, logFile io.Writer) (*ResultMessage, error)
+}
+
 // NewProvider creates a new Provider instance based on the agent type
 func NewProvider(agent AgentProvider) (Provider, error) {
 	switch agent {
@@ -29,7 +41,7 @@ func NewProvider(agent AgentProvider) (Provider, error) {
 	case AgentCodex:
 		return &CodexProvider{}, nil
 	case AgentRLM:
-		return &RLMProvider{}, nil
+		return NewRLMProvider(rlm.DefaultConfig()), nil
 	default:
 		return nil, fmt.Errorf("unknown agent provider: %s", agent)
 	}
@@ -366,11 +378,17 @@ func processCodexItemCompleted(line []byte, w io.Writer, state *StreamState) {
 	}
 }
 
-// RLMProvider implements Provider for Recursive Language Model agent
+// RLMProvider implements Provider and DirectRunner for Recursive Language Model agent.
 // RLM enables handling of large contexts by storing them as variables
 // and allowing the model to explore them programmatically through a REPL.
 type RLMProvider struct {
 	prompt []byte
+	config rlm.Config
+}
+
+// NewRLMProvider creates a new RLMProvider with the given configuration.
+func NewRLMProvider(config rlm.Config) *RLMProvider {
+	return &RLMProvider{config: config}
 }
 
 // Name returns the provider name
@@ -380,22 +398,68 @@ func (p *RLMProvider) Name() string {
 
 // Model returns the model being used
 func (p *RLMProvider) Model() string {
-	return "rlm (claude-sonnet-4-20250514)"
+	return fmt.Sprintf("rlm (%s)", p.config.Model)
 }
 
-// BuildCommand creates the RLM command
-// Note: RLM doesn't use external CLI tools - it uses direct API calls.
-// This returns a placeholder that will be handled specially in the loop.
+// BuildCommand is not used by RLM - it runs directly.
+// Returns an error to indicate direct execution is required.
 func (p *RLMProvider) BuildCommand(prompt []byte) (*exec.Cmd, error) {
 	p.prompt = prompt
-	// RLM provider doesn't use external commands - return an error to signal
-	// that this provider requires special handling in the loop
-	return nil, fmt.Errorf("RLM provider does not use external commands - requires direct API integration")
+	return nil, fmt.Errorf("RLM provider uses direct execution - use RunDirect instead")
 }
 
-// ParseOutput parses RLM output
-// Note: RLM handles its own output internally through the REPL loop
+// ParseOutput is not used by RLM - it handles output internally.
 func (p *RLMProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer) (*ResultMessage, error) {
-	// RLM provider handles output internally - this should not be called
-	return nil, fmt.Errorf("RLM provider handles output internally")
+	return nil, fmt.Errorf("RLM provider handles output internally via RunDirect")
+}
+
+// RunDirect executes the RLM session directly with the given prompt.
+// This implements the DirectRunner interface.
+func (p *RLMProvider) RunDirect(prompt []byte, output io.Writer, logFile io.Writer) (*ResultMessage, error) {
+	// Parse the prompt to extract query and context
+	// The prompt is structured with the query embedded in it
+	promptStr := string(prompt)
+
+	// Create RLM runner
+	runner := rlm.NewRunner(p.config, output)
+
+	// Run the RLM session
+	// The prompt content serves as both context and query for RLM
+	ctx := context.Background()
+	result, err := runner.Run(ctx, promptStr, "Complete the task described in the context")
+	if err != nil {
+		return &ResultMessage{
+			Type:    "result",
+			IsError: true,
+			Result:  err.Error(),
+		}, err
+	}
+
+	// Log the result if logFile is provided
+	if logFile != nil {
+		logEntry := map[string]any{
+			"type":        "rlm_result",
+			"answer":      result.Answer,
+			"iterations":  result.Iterations,
+			"tokens":      result.TotalTokens,
+			"duration_ms": result.DurationMs,
+		}
+		if logData, err := json.Marshal(logEntry); err == nil {
+			logFile.Write(logData)
+			logFile.Write([]byte("\n"))
+		}
+	}
+
+	// Build result message
+	return &ResultMessage{
+		Type:       "result",
+		DurationMs: result.DurationMs,
+		NumTurns:   result.Iterations,
+		Result:     result.Answer,
+		Usage: Usage{
+			InputTokens:  result.InputTokens,
+			OutputTokens: result.OutputTokens,
+		},
+		SessionComplete: result.SessionComplete,
+	}, nil
 }

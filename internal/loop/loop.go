@@ -102,6 +102,11 @@ func runIteration(cfg Config, provider Provider, iteration int) (bool, error) {
 	}
 	defer logFile.Close()
 
+	// Check if provider supports direct execution (e.g., RLM)
+	if directRunner, ok := provider.(DirectRunner); ok {
+		return runDirectIteration(cfg, directRunner, promptContent, logFile)
+	}
+
 	// Build the command using the provider
 	cmd, err := provider.BuildCommand(promptContent)
 	if err != nil {
@@ -154,6 +159,35 @@ func runIteration(cfg Config, provider Provider, iteration int) (bool, error) {
 	// Inject duration if provider didn't supply it
 	if resultMsg != nil && resultMsg.DurationMs == 0 {
 		resultMsg.DurationMs = int(time.Since(startTime).Milliseconds())
+	}
+
+	// Display the final result summary
+	fmt.Fprintln(cfg.Output)
+	if resultMsg != nil {
+		FormatIterationSummary(cfg.Output, *resultMsg)
+	} else {
+		fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: No result message received from %s", provider.Name())))
+	}
+
+	// Check if agent signaled session completion
+	sessionComplete := resultMsg != nil && resultMsg.SessionComplete
+	return sessionComplete, nil
+}
+
+// runDirectIteration handles providers that run directly without external commands.
+func runDirectIteration(cfg Config, provider DirectRunner, promptContent []byte, logFile *os.File) (bool, error) {
+	// Show progress indicator
+	fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Running %s...", provider.Name())))
+
+	// Run the provider directly
+	resultMsg, err := provider.RunDirect(promptContent, cfg.Output, logFile)
+	if err != nil {
+		// Still display summary on error
+		if resultMsg != nil {
+			fmt.Fprintln(cfg.Output)
+			FormatIterationSummary(cfg.Output, *resultMsg)
+		}
+		return false, fmt.Errorf("%s execution failed: %w", provider.Name(), err)
 	}
 
 	// Display the final result summary
