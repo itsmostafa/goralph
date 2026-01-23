@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/itsmostafa/goralph/compare/v1.3.0...v2.0.0) (2026-01-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cli:** The 'build' and 'plan' subcommands have been removed. Use 'goralph run' instead.
+
+### Code Refactoring
+
+* **cli:** replace build/plan commands with unified run command ([80a561a](https://github.com/itsmostafa/goralph/commit/80a561ab46f3e339609fd9dd8a31dd1b466ba842))
+
 ## [1.3.0](https://github.com/itsmostafa/goralph/compare/v1.2.0...v1.3.0) (2026-01-23)
 
 
