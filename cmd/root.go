@@ -10,9 +10,17 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "goralph",
-	Short: "Ralph Wiggum agentic loop for Claude Code",
+	Short: "Ralph Wiggum agentic loop for AI coding agents",
 	Long: `Go Ralph is an implementation of the Ralph Wiggum Technique - an agentic loop
-pattern that runs Claude Code iteratively with automatic git pushes between iterations.
+pattern that runs AI coding agents iteratively with automatic git pushes between iterations.
+
+Supported agents:
+  claude  - Claude Code CLI (default)
+  codex   - OpenAI Codex CLI
+  rlm     - Recursive Language Model (native Go, for large codebase analysis)
+
+The RLM agent uses a REPL-based approach where the model explores codebases
+programmatically through JavaScript, making it effective for large repositories.
 
 Reference: https://github.com/ghuntley/how-to-ralph-wiggum`,
 }
