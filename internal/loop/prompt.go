@@ -24,7 +24,7 @@ func resetImplementationPlan(planFile string) error {
 }
 
 // buildPromptWithPlan reads the prompt file and appends the implementation plan with instructions
-func buildPromptWithPlan(promptFile string, planFile string, mode Mode, iteration int, maxIterations int) ([]byte, error) {
+func buildPromptWithPlan(promptFile string, planFile string, iteration int, maxIterations int) ([]byte, error) {
 	// Read the prompt file
 	promptContent, err := os.ReadFile(promptFile)
 	if err != nil {
@@ -52,7 +52,6 @@ You are running in a **goralph agentic loop** - an automated iteration system th
 
 **Key facts:**
 - Iteration: %s
-- Mode: %s
 - Each iteration runs with a fresh context window
 - Focus on completing ONE task per iteration
 - After completing a task: update the implementation plan, commit changes, then exit
@@ -68,7 +67,7 @@ You are running in a **goralph agentic loop** - an automated iteration system th
 
 ---
 
-`, iterationStr, mode)
+`, iterationStr)
 
 	// Build task guidance based on whether max iterations is set
 	var taskGuidance string

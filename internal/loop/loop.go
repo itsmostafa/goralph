@@ -80,7 +80,7 @@ func Run(cfg Config) error {
 
 func runIteration(cfg Config, provider Provider, iteration int) (bool, error) {
 	// Build prompt with implementation plan
-	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.PlanFile, cfg.Mode, iteration, cfg.MaxIterations)
+	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.PlanFile, iteration, cfg.MaxIterations)
 	if err != nil {
 		return false, err
 	}

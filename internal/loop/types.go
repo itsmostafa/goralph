@@ -8,14 +8,8 @@ import (
 	"time"
 )
 
-// Mode represents the execution mode
-type Mode string
-
 const (
-	ModeBuild Mode = "build"
-	ModePlan  Mode = "plan"
-
-	// PromptFile is the path to the prompt file used by both build and plan modes
+	// PromptFile is the path to the prompt file
 	PromptFile = ".ralph/PROMPT.md"
 	// CompletionPromise is the pattern agents emit to signal all tasks are complete
 	CompletionPromise = "<promise>COMPLETE</promise>"
@@ -25,7 +19,6 @@ const (
 
 // Config holds the loop configuration
 type Config struct {
-	Mode          Mode
 	PromptFile    string
 	PlanFile      string // Session-scoped plan file path
 	MaxIterations int

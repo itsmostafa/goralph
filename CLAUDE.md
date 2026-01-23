@@ -17,12 +17,11 @@ task install           # Install goralph to ~/.local/bin/
 
 ### CLI usage
 ```bash
-goralph build            # Run agentic loop in build mode (uses Claude by default)
-goralph plan             # Run agentic loop in plan mode
-goralph build -n 5       # Run with max 5 iterations (tasks broken into ~5 pieces)
-goralph plan --max 10    # Run with max 10 iterations (tasks broken into ~10 pieces)
-goralph build --no-push  # Run without pushing changes after each iteration
-goralph build --agent codex  # Use OpenAI Codex instead of Claude
+goralph run              # Run the agentic loop (uses Claude by default)
+goralph run -n 5         # Run with max 5 iterations (tasks broken into ~5 pieces)
+goralph run --max 10     # Run with max 10 iterations (tasks broken into ~10 pieces)
+goralph run --no-push    # Run without pushing changes after each iteration
+goralph run --agent codex  # Use OpenAI Codex instead of Claude
 ```
 
 ### Environment variables
@@ -56,7 +55,7 @@ When using `--max`/`-n` flag:
 
 ## Project Structure
 
-- `cmd/` - Cobra CLI commands (root, build, plan)
+- `cmd/` - Cobra CLI commands (root, run)
 - `internal/loop/` - Core loop logic
   - `loop.go` - Main loop execution and agent iteration
   - `providers.go` - Agent provider implementations (Claude, Codex)
@@ -71,7 +70,7 @@ When using `--max`/`-n` flag:
 
 ## Required Files
 
-- `.ralph/PROMPT.md` - Prompt file for the agentic loop (used by both build and plan modes)
+- `.ralph/PROMPT.md` - Prompt file for the agentic loop
 - `.ralph/plans/` - Directory for session-scoped implementation plans (auto-created)
 - `taskfile.yml` - Task runner configuration
 
