@@ -20,8 +20,6 @@ jobs:
       - name: Run Release Please
         uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         id: release
-        with:
-          release-type: go
 
   build-binaries:
     needs: release-please
