@@ -1,5 +1,51 @@
 package loop
 
+import (
+	"fmt"
+	"io"
+)
+
+// Mode represents the execution mode
+type Mode string
+
+const (
+	ModeBuild Mode = "build"
+	ModePlan  Mode = "plan"
+
+	// ImplementationPlanFile is the path to the implementation plan
+	ImplementationPlanFile = ".ralph/IMPLEMENTATION_PLAN.md"
+)
+
+// Config holds the loop configuration
+type Config struct {
+	Mode          Mode
+	PromptFile    string
+	MaxIterations int
+	NoPush        bool
+	Agent         AgentProvider
+	Output        io.Writer
+}
+
+// AgentProvider represents the agent provider to use
+type AgentProvider string
+
+const (
+	AgentClaude AgentProvider = "claude"
+	AgentCodex  AgentProvider = "codex"
+)
+
+// ValidateAgentProvider checks if the given agent provider is valid
+func ValidateAgentProvider(agent string) (AgentProvider, error) {
+	switch AgentProvider(agent) {
+	case AgentClaude:
+		return AgentClaude, nil
+	case AgentCodex:
+		return AgentCodex, nil
+	default:
+		return "", fmt.Errorf("unknown agent provider: %q (valid options: claude, codex)", agent)
+	}
+}
+
 // Message represents a generic JSON message from Claude stream output
 type Message struct {
 	Type    string `json:"type"`
@@ -24,6 +70,7 @@ type ResultMessage struct {
 	Result       string  `json:"result"`
 	TotalCostUSD float64 `json:"total_cost_usd"`
 	Usage        Usage   `json:"usage"`
+	HasCost      bool    `json:"-"` // Internal field: true if provider supplies cost data
 }
 
 // Usage represents token usage statistics
@@ -84,4 +131,51 @@ func NewStreamState() *StreamState {
 		ActiveTools:    make(map[string]string),
 		CompletedTools: make(map[string]bool),
 	}
+}
+
+// CodexEvent represents a generic event from Codex CLI JSON output
+type CodexEvent struct {
+	Type string `json:"type"`
+}
+
+// CodexThreadStartedEvent represents a thread.started event from Codex CLI
+type CodexThreadStartedEvent struct {
+	Type     string `json:"type"`
+	ThreadID string `json:"thread_id"`
+}
+
+// CodexTurnCompletedEvent represents a turn.completed event from Codex CLI
+type CodexTurnCompletedEvent struct {
+	Type  string     `json:"type"`
+	Usage CodexUsage `json:"usage,omitempty"`
+}
+
+// CodexUsage represents token usage statistics from Codex CLI
+type CodexUsage struct {
+	InputTokens       int `json:"input_tokens"`
+	CachedInputTokens int `json:"cached_input_tokens"`
+	OutputTokens      int `json:"output_tokens"`
+}
+
+// CodexErrorEvent represents an error event from Codex CLI
+type CodexErrorEvent struct {
+	Type    string `json:"type"`
+	Message string `json:"message,omitempty"`
+	Code    string `json:"code,omitempty"`
+}
+
+// CodexItemEvent represents an item.started or item.completed event from Codex CLI
+type CodexItemEvent struct {
+	Type string    `json:"type"`
+	Item CodexItem `json:"item"`
+}
+
+// CodexItem represents an item object within item.* events
+type CodexItem struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"` // agent_message, reasoning, command_execution, file_change, mcp_tool_call, web_search, plan_update
+	Status  string `json:"status,omitempty"`
+	Text    string `json:"text,omitempty"`
+	Command string `json:"command,omitempty"`
+	Name    string `json:"name,omitempty"` // For MCP tool calls
 }

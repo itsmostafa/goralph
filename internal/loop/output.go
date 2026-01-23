@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	// titleStyle for bold purple headers
+	// titleStyle for bold red headers
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("99"))
+			Foreground(lipgloss.Color("160"))
 
 	// dimStyle for muted metadata text
 	dimStyle = lipgloss.NewStyle().
@@ -28,20 +28,20 @@ var (
 	// boxStyle for summary box with rounded border
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("99")).
+			BorderForeground(lipgloss.Color("160")).
 			Padding(0, 1)
 
 	// headerBoxStyle for the header
 	headerBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.DoubleBorder()).
-			BorderForeground(lipgloss.Color("99")).
+			BorderForeground(lipgloss.Color("160")).
 			Padding(0, 1)
 
 	// loopBannerStyle for iteration banners
 	loopBannerStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("212")).
-			Background(lipgloss.Color("57")).
+			Foreground(lipgloss.Color("255")).
+			Background(lipgloss.Color("160")).
 			Padding(0, 2)
 
 	// toolNameStyle for tool names in streaming output
@@ -59,14 +59,22 @@ var (
 )
 
 // FormatHeader renders the loop header with configuration info
-func FormatHeader(w io.Writer, cfg Config, branch string) {
+func FormatHeader(w io.Writer, cfg Config, branch string, model string) {
 	var maxLine string
 	if cfg.MaxIterations > 0 {
 		maxLine = fmt.Sprintf("\n%s %d iterations", dimStyle.Render("Max:"), cfg.MaxIterations)
 	}
 
-	content := fmt.Sprintf("%s %s\n%s %s\n%s %s%s",
+	// Display agent provider (default to "claude" if not set)
+	agentName := string(cfg.Agent)
+	if agentName == "" {
+		agentName = "claude"
+	}
+
+	content := fmt.Sprintf("%s %s  %s %s\n%s %s\n%s %s\n%s %s%s",
 		dimStyle.Render("Mode:"), titleStyle.Render(string(cfg.Mode)),
+		dimStyle.Render("Agent:"), titleStyle.Render(agentName),
+		dimStyle.Render("Model:"), model,
 		dimStyle.Render("Prompt:"), cfg.PromptFile,
 		dimStyle.Render("Branch:"), successStyle.Render(branch),
 		maxLine,
@@ -91,11 +99,19 @@ func FormatIterationSummary(w io.Writer, result ResultMessage) {
 		statusIndicator = successStyle.Render("OK")
 	}
 
+	// Format cost conditionally based on provider support
+	var costStr string
+	if result.HasCost {
+		costStr = fmt.Sprintf("$%.4f", result.TotalCostUSD)
+	} else {
+		costStr = dimStyle.Render("N/A")
+	}
+
 	// Build the summary content
-	line1 := fmt.Sprintf("%s %.1fs  %s %d  %s $%.4f",
+	line1 := fmt.Sprintf("%s %.1fs  %s %d  %s %s",
 		dimStyle.Render("Duration:"), duration,
 		dimStyle.Render("Turns:"), result.NumTurns,
-		dimStyle.Render("Cost:"), result.TotalCostUSD,
+		dimStyle.Render("Cost:"), costStr,
 	)
 
 	line2 := fmt.Sprintf("%s %s in %s %s out  %s",

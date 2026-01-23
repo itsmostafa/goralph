@@ -45,4 +45,5 @@ debug
 
 # AI
 .claude/
-.ralph/logs/
+.qbit/
+.ralph/

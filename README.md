@@ -15,19 +15,20 @@ Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wig
 
 ## Features
 
+- **Multi-Agent Support** - Choose between Claude Code and OpenAI Codex CLI as your agent provider
 - **Build and Plan Modes** - Two execution modes with dedicated prompt files for different workflows
 - **Implementation Plan Tracking** - Auto-manages `.ralph/IMPLEMENTATION_PLAN.md` for task tracking across iterations
-- **Iteration-Aware Task Generation** - When using `-n`/`--max`, Claude breaks work into approximately N tasks
+- **Iteration-Aware Task Generation** - When using `-n`/`--max`, the agent breaks work into approximately N tasks
 - **Configurable Iteration Limits** - Set maximum iterations with `-n`/`--max` flag or run unlimited
 - **Automatic Git Pushes** - Pushes changes to remote after each iteration, auto-creates remote branches
 - **Styled Terminal Output** - Simple terminal UI with lipgloss styling, colored status indicators, and boxed summaries
 - **Iteration Summaries** - Displays duration, token usage, cost, and status after each iteration
-- **JSON Logging** - Saves full Claude output to timestamped JSONL files in `.ralph/logs/`
-- **Stream JSON Parsing** - Parses Claude's streaming JSON output in real-time
+- **JSON Logging** - Saves full agent output to timestamped JSONL files in `.ralph/logs/`
+- **Stream JSON Parsing** - Parses streaming JSON output from agents in real-time
 
 ## Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code/getting-started)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code/getting-started) or [OpenAI Codex CLI](https://github.com/openai/codex) - at least one agent provider
 - [Go 1.25](https://go.dev/doc/install)
 - [Task](https://github.com/go-task/task) (optional) - for running task commands like `task run`
 
@@ -65,7 +66,7 @@ Download the latest release for your platform from the [Releases page](https://g
 ### Commands
 
 ```bash
-# Run the agentic loop in build mode
+# Run the agentic loop in build mode (uses Claude by default)
 goralph build
 
 # Run in build mode with max 20 iterations
@@ -82,8 +83,12 @@ goralph plan
 goralph plan --max 5
 goralph plan -n 5
 
+# Use OpenAI Codex instead of Claude
+goralph build --agent codex
+goralph plan --agent codex
+
 # Combine flags
-goralph build -n 10 --no-push
+goralph build -n 10 --no-push --agent codex
 ```
 
 ### Options
@@ -92,6 +97,13 @@ goralph build -n 10 --no-push
 |------|-------|-------------|
 | `--max` | `-n` | Maximum number of iterations (0 = unlimited) |
 | `--no-push` | | Skip pushing changes after each iteration |
+| `--agent` | | Agent provider to use: `claude` (default) or `codex` |
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `GORALPH_AGENT` | Default agent provider (`claude` or `codex`). Overridden by `--agent` flag. |
 
 ### Required Files
 
@@ -103,9 +115,12 @@ Before running, ensure these prompt files exist in your `.ralph/` directory:
 
 ### Warning
 
-**Claude Code must run with `--dangerously-skip-permissions` mode enabled for Go Ralph to function.**
+**Agents run in unattended mode with full system access:**
 
-This mode allows Claude to execute commands without confirmation prompts, which is required for unattended agentic loops.
+- **Claude Code** runs with `--dangerously-skip-permissions` mode enabled
+- **Codex CLI** runs with `--dangerously-bypass-approvals-and-sandbox` mode enabled
+
+These modes allow the agents to execute commands without confirmation prompts, which is required for unattended agentic loops.
 
 **It is strongly recommended to run Go Ralph (or any fully autonomous AI agent) inside a sandbox or isolated environment.**
 
