@@ -25,6 +25,7 @@ var buildCmd = &cobra.Command{
 		return loop.Run(loop.Config{
 			Mode:          loop.ModeBuild,
 			PromptFile:    ".ralph/PROMPT_build.md",
+			PlanFile:      loop.GeneratePlanPath(),
 			MaxIterations: buildMaxIterations,
 			NoPush:        buildNoPush,
 			Agent:         agentProvider,
