@@ -16,7 +16,6 @@ Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wig
 ## Features
 
 - **Multi-Agent Support** - Choose between Claude Code and OpenAI Codex CLI as your agent provider
-- **Build and Plan Modes** - Two execution modes with dedicated prompt files for different workflows
 - **Session-Scoped Implementation Plans** - Creates timestamped plan files in `.ralph/plans/` for each session
 - **Iteration-Aware Task Generation** - When using `-n`/`--max`, the agent breaks work into approximately N tasks
 - **Configurable Iteration Limits** - Set maximum iterations with `-n`/`--max` flag or run unlimited
@@ -65,29 +64,21 @@ Download the latest release for your platform from the [Releases page](https://g
 ### Commands
 
 ```bash
-# Run the agentic loop in build mode (uses Claude by default)
-goralph build
+# Run the agentic loop (uses Claude by default)
+goralph run
 
-# Run in build mode with max 20 iterations
-goralph build --max 20
-goralph build -n 20
+# Run with max 20 iterations
+goralph run --max 20
+goralph run -n 20
 
 # Run without pushing changes after each iteration
-goralph build --no-push
-
-# Run the agentic loop in plan mode
-goralph plan
-
-# Run in plan mode with max 5 iterations
-goralph plan --max 5
-goralph plan -n 5
+goralph run --no-push
 
 # Use OpenAI Codex instead of Claude
-goralph build --agent codex
-goralph plan --agent codex
+goralph run --agent codex
 
 # Combine flags
-goralph build -n 10 --no-push --agent codex
+goralph run -n 10 --no-push --agent codex
 ```
 
 ### Options
@@ -108,7 +99,7 @@ goralph build -n 10 --no-push --agent codex
 
 Before running, ensure this prompt file exists in your `.ralph/` directory:
 
-- `.ralph/PROMPT.md` - Prompt used for both build and plan modes
+- `.ralph/PROMPT.md` - Prompt file for the agentic loop
 - `.ralph/plans/` - Directory for session-scoped implementation plans (auto-created)
 
 ### Warning
