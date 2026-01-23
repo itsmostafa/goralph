@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/itsmostafa/goralph/compare/v0.1.0...v0.1.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* **output:** improve newline handling between text and tool indicators ([2ba5eb8](https://github.com/itsmostafa/goralph/commit/2ba5eb85cdf6d48a3272d67bb6d4fac4d81ae2ce))
+* **output:** improve newline handling between text and tool indicators ([ce823c6](https://github.com/itsmostafa/goralph/commit/ce823c6523a6fef4979cfa46d861d9ec1079e43d))
+
 ## 0.1.0 (2026-01-23)
 
 
