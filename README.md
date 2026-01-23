@@ -13,17 +13,6 @@ An agentic loop that runs Claude Code iteratively with automatic git pushes. Let
 This project is intentionally built to be simple and easy to use as intended by the creator of Ralph, Geoffrey Huntley.
 Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wiggum)
 
-## Repository Overview
-
-Go Ralph is a Go CLI that runs the Ralph Wiggum agentic loop (Claude Code or OpenAI Codex) with optional iteration limits and automatic git pushes. It reads prompts from `.ralph/`, streams agent output, writes JSONL logs, and updates an implementation plan between iterations.
-
-Key locations:
-- `cmd/` - CLI commands and flag parsing (build/plan/root).
-- `internal/loop/` - Core loop execution, prompt handling, provider integration, logging, and git push logic.
-- `internal/version/` - Version metadata for `goralph --version`.
-- `assets/` - Project logo and release assets.
-- `main.go` - CLI entrypoint.
-
 ## Features
 
 - **Multi-Agent Support** - Choose between Claude Code and OpenAI Codex CLI as your agent provider
