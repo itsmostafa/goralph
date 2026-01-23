@@ -20,6 +20,7 @@ Reference: https://github.com/ghuntley/how-to-ralph-wiggum`,
 func init() {
 	rootCmd.Version = version.Version
 	rootCmd.SetVersionTemplate(fmt.Sprintf("goralph %s\n", version.String()))
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 }
 
 // Execute runs the root command
