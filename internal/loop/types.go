@@ -70,6 +70,7 @@ type ResultMessage struct {
 	Result       string  `json:"result"`
 	TotalCostUSD float64 `json:"total_cost_usd"`
 	Usage        Usage   `json:"usage"`
+	HasCost      bool    `json:"-"` // Internal field: true if provider supplies cost data
 }
 
 // Usage represents token usage statistics

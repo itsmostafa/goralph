@@ -89,6 +89,7 @@ func (p *ClaudeProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer
 			if err := json.Unmarshal(line, &result); err != nil {
 				continue
 			}
+			result.HasCost = true // Claude provides cost data
 			resultMsg = &result
 
 		case "assistant":

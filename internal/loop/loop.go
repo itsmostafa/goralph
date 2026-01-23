@@ -127,6 +127,9 @@ func runIteration(cfg Config, provider Provider, iteration int) error {
 	// Show progress indicator
 	fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Running %s...", provider.Name())))
 
+	// Track duration externally for providers that don't report it
+	startTime := time.Now()
+
 	// Parse output using the provider and write to log file
 	resultMsg, err := provider.ParseOutput(stdout, cfg.Output, logFile)
 	if err != nil {
@@ -136,6 +139,11 @@ func runIteration(cfg Config, provider Provider, iteration int) error {
 	// Wait for completion
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("%s exited with error: %w", provider.Name(), err)
+	}
+
+	// Inject duration if provider didn't supply it
+	if resultMsg != nil && resultMsg.DurationMs == 0 {
+		resultMsg.DurationMs = int(time.Since(startTime).Milliseconds())
 	}
 
 	// Display the final result summary
