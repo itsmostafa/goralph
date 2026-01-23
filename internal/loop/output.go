@@ -142,6 +142,14 @@ func FormatMaxIterations(w io.Writer, max int) {
 	fmt.Fprintln(w, dimStyle.Render(msg))
 }
 
+// FormatSessionComplete renders the session complete message
+func FormatSessionComplete(w io.Writer) {
+	content := successStyle.Render("Session Complete") + "\n" +
+		dimStyle.Render("All tasks marked complete by agent")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, boxStyle.Render(content))
+}
+
 // formatNumber adds commas to large numbers for readability
 func formatNumber(n int) string {
 	if n < 1000 {

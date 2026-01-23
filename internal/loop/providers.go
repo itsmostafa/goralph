@@ -117,6 +117,14 @@ func (p *ClaudeProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer
 		return nil, err
 	}
 
+	// Check for completion promise in accumulated text
+	if resultMsg == nil {
+		resultMsg = &ResultMessage{}
+	}
+	if strings.Contains(state.AccumulatedText.String(), CompletionPromise) {
+		resultMsg.SessionComplete = true
+	}
+
 	return resultMsg, nil
 }
 
@@ -133,6 +141,7 @@ func processClaudeAssistantMessage(line []byte, w io.Writer, state *StreamState)
 		switch block.Type {
 		case "text":
 			fullText.WriteString(block.Text)
+			state.AccumulatedText.WriteString(block.Text)
 		case "tool_use":
 			// Track and display tool invocations
 			if block.ID != "" && state.ActiveTools[block.ID] == "" {
@@ -260,14 +269,18 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 		return nil, err
 	}
 
+	// Check for completion promise in accumulated text
+	sessionComplete := strings.Contains(state.AccumulatedText.String(), CompletionPromise)
+
 	// Build a result message for summary display
 	result := &ResultMessage{
-		Type:     "result",
-		NumTurns: turnCount,
-		IsError:  hasError,
+		Type:            "result",
+		NumTurns:        turnCount,
+		IsError:         hasError,
+		SessionComplete: sessionComplete,
 		Usage: Usage{
-			InputTokens:         totalUsage.InputTokens,
-			OutputTokens:        totalUsage.OutputTokens,
+			InputTokens:          totalUsage.InputTokens,
+			OutputTokens:         totalUsage.OutputTokens,
 			CacheReadInputTokens: totalUsage.CachedInputTokens,
 		},
 	}
@@ -327,11 +340,13 @@ func processCodexItemCompleted(line []byte, w io.Writer, state *StreamState) {
 		// Text output from the agent
 		if item.Text != "" {
 			FormatTextDelta(w, item.Text+"\n")
+			state.AccumulatedText.WriteString(item.Text)
 		}
 	case "reasoning":
 		// Reasoning text - display as text
 		if item.Text != "" {
 			FormatTextDelta(w, item.Text+"\n")
+			state.AccumulatedText.WriteString(item.Text)
 		}
 	case "command_execution", "mcp_tool_call", "file_change", "web_search":
 		// Mark tool as complete
@@ -344,6 +359,7 @@ func processCodexItemCompleted(line []byte, w io.Writer, state *StreamState) {
 		// Plan updates can be displayed as text if desired
 		if item.Text != "" {
 			FormatTextDelta(w, item.Text+"\n")
+			state.AccumulatedText.WriteString(item.Text)
 		}
 	}
 }

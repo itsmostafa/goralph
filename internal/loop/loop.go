@@ -53,8 +53,13 @@ func Run(cfg Config) error {
 		FormatLoopBanner(cfg.Output, iteration)
 
 		// Run iteration using the provider
-		if err := runIteration(cfg, provider, iteration); err != nil {
+		completed, err := runIteration(cfg, provider, iteration)
+		if err != nil {
 			return fmt.Errorf("%s iteration failed: %w", provider.Name(), err)
+		}
+		if completed {
+			FormatSessionComplete(cfg.Output)
+			break
 		}
 
 		// Push changes unless --no-push is set
@@ -68,17 +73,17 @@ func Run(cfg Config) error {
 	return nil
 }
 
-func runIteration(cfg Config, provider Provider, iteration int) error {
+func runIteration(cfg Config, provider Provider, iteration int) (bool, error) {
 	// Build prompt with implementation plan
 	promptContent, err := buildPromptWithPlan(cfg.PromptFile, cfg.Mode, iteration, cfg.MaxIterations)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Create logs directory
 	logsDir := filepath.Join(".ralph", "logs")
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
-		return fmt.Errorf("failed to create logs directory: %w", err)
+		return false, fmt.Errorf("failed to create logs directory: %w", err)
 	}
 
 	// Generate timestamped log filename
@@ -88,26 +93,26 @@ func runIteration(cfg Config, provider Provider, iteration int) error {
 	// Create log file
 	logFile, err := os.Create(logPath)
 	if err != nil {
-		return fmt.Errorf("failed to create log file: %w", err)
+		return false, fmt.Errorf("failed to create log file: %w", err)
 	}
 	defer logFile.Close()
 
 	// Build the command using the provider
 	cmd, err := provider.BuildCommand(promptContent)
 	if err != nil {
-		return fmt.Errorf("failed to build command: %w", err)
+		return false, fmt.Errorf("failed to build command: %w", err)
 	}
 
 	// Set up stdin with prompt content
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("failed to create stdin pipe: %w", err)
+		return false, fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
 
 	// Capture stdout for parsing
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to create stdout pipe: %w", err)
+		return false, fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
 	// Connect stderr to terminal
@@ -115,12 +120,12 @@ func runIteration(cfg Config, provider Provider, iteration int) error {
 
 	// Start the command
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start %s: %w", provider.Name(), err)
+		return false, fmt.Errorf("failed to start %s: %w", provider.Name(), err)
 	}
 
 	// Write prompt to stdin and close
 	if _, err := stdin.Write(promptContent); err != nil {
-		return fmt.Errorf("failed to write to stdin: %w", err)
+		return false, fmt.Errorf("failed to write to stdin: %w", err)
 	}
 	stdin.Close()
 
@@ -133,12 +138,12 @@ func runIteration(cfg Config, provider Provider, iteration int) error {
 	// Parse output using the provider and write to log file
 	resultMsg, err := provider.ParseOutput(stdout, cfg.Output, logFile)
 	if err != nil {
-		return fmt.Errorf("failed to parse output: %w", err)
+		return false, fmt.Errorf("failed to parse output: %w", err)
 	}
 
 	// Wait for completion
 	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("%s exited with error: %w", provider.Name(), err)
+		return false, fmt.Errorf("%s exited with error: %w", provider.Name(), err)
 	}
 
 	// Inject duration if provider didn't supply it
@@ -154,5 +159,7 @@ func runIteration(cfg Config, provider Provider, iteration int) error {
 		fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: No result message received from %s", provider.Name())))
 	}
 
-	return nil
+	// Check if agent signaled session completion
+	sessionComplete := resultMsg != nil && resultMsg.SessionComplete
+	return sessionComplete, nil
 }

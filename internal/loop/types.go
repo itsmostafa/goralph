@@ -3,6 +3,7 @@ package loop
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
 // Mode represents the execution mode
@@ -14,6 +15,9 @@ const (
 
 	// ImplementationPlanFile is the path to the implementation plan
 	ImplementationPlanFile = ".ralph/IMPLEMENTATION_PLAN.md"
+
+	// CompletionPromise is the pattern agents emit to signal all tasks are complete
+	CompletionPromise = "<promise>COMPLETE</promise>"
 )
 
 // Config holds the loop configuration
@@ -69,8 +73,9 @@ type ResultMessage struct {
 	NumTurns     int     `json:"num_turns"`
 	Result       string  `json:"result"`
 	TotalCostUSD float64 `json:"total_cost_usd"`
-	Usage        Usage   `json:"usage"`
-	HasCost      bool    `json:"-"` // Internal field: true if provider supplies cost data
+	Usage           Usage   `json:"usage"`
+	HasCost         bool    `json:"-"` // Internal field: true if provider supplies cost data
+	SessionComplete bool    `json:"-"` // Internal: true if agent emitted completion promise
 }
 
 // Usage represents token usage statistics
@@ -120,9 +125,10 @@ type ToolResultBlock struct {
 
 // StreamState tracks the state during streaming output
 type StreamState struct {
-	LastTextLen    int
-	ActiveTools    map[string]string // tool ID -> tool name
-	CompletedTools map[string]bool
+	LastTextLen     int
+	ActiveTools     map[string]string // tool ID -> tool name
+	CompletedTools  map[string]bool
+	AccumulatedText strings.Builder // All text content for pattern detection
 }
 
 // NewStreamState creates a new StreamState with initialized maps
