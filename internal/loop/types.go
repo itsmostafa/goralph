@@ -15,6 +15,8 @@ const (
 	ModeBuild Mode = "build"
 	ModePlan  Mode = "plan"
 
+	// PromptFile is the path to the prompt file used by both build and plan modes
+	PromptFile = ".ralph/PROMPT.md"
 	// CompletionPromise is the pattern agents emit to signal all tasks are complete
 	CompletionPromise = "<promise>COMPLETE</promise>"
 	// PlansDir is the directory for session-scoped implementation plans

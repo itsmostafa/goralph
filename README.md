@@ -52,14 +52,13 @@ Download the latest release for your platform from the [Releases page](https://g
    go install
    ```
 
-3. Create the required prompt files in your target project:
+3. Create the required prompt file in your target project:
    ```bash
    mkdir -p .ralph
-   touch .ralph/PROMPT_build.md
-   touch .ralph/PROMPT_plan.md
+   touch .ralph/PROMPT.md
    ```
 
-4. Add your prompts to the files created above. These prompts will be used by Claude Code during the agentic loop.
+4. Add your prompt to the file created above. This prompt will be used by the agentic loop.
 
 ## Usage
 
@@ -107,10 +106,9 @@ goralph build -n 10 --no-push --agent codex
 
 ### Required Files
 
-Before running, ensure these prompt files exist in your `.ralph/` directory:
+Before running, ensure this prompt file exists in your `.ralph/` directory:
 
-- `.ralph/PROMPT_build.md` - Prompt used for build mode
-- `.ralph/PROMPT_plan.md` - Prompt used for plan mode
+- `.ralph/PROMPT.md` - Prompt used for both build and plan modes
 - `.ralph/plans/` - Directory for session-scoped implementation plans (auto-created)
 
 ### Warning
