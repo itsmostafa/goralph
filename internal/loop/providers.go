@@ -214,8 +214,6 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 		}
 
 		switch event.Type {
-		case "turn.started":
-			turnCount++
 		case "turn.completed":
 			// Extract usage stats from turn.completed events
 			var turnEvent CodexTurnCompletedEvent
@@ -235,6 +233,13 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 		case "item.started":
 			processCodexItemStarted(line, w, state)
 		case "item.completed":
+			// Count reasoning items as "turns" since they represent model response cycles
+			var itemEvent CodexItemEvent
+			if err := json.Unmarshal(line, &itemEvent); err == nil {
+				if itemEvent.Item.Type == "reasoning" {
+					turnCount++
+				}
+			}
 			processCodexItemCompleted(line, w, state)
 		}
 	}
