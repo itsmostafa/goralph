@@ -71,8 +71,7 @@ func FormatHeader(w io.Writer, cfg Config, branch string, model string) {
 		agentName = "claude"
 	}
 
-	content := fmt.Sprintf("%s %s  %s %s\n%s %s\n%s %s\n%s %s%s",
-		dimStyle.Render("Mode:"), titleStyle.Render(string(cfg.Mode)),
+	content := fmt.Sprintf("%s %s\n%s %s\n%s %s\n%s %s%s",
 		dimStyle.Render("Agent:"), titleStyle.Render(agentName),
 		dimStyle.Render("Model:"), model,
 		dimStyle.Render("Prompt:"), cfg.PromptFile,
