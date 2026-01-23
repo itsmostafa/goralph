@@ -14,7 +14,7 @@ var planAgent string
 var planCmd = &cobra.Command{
 	Use:   "plan",
 	Short: "Run the agentic loop in plan mode",
-	Long:  `Run Claude Code in plan mode using .ralph/PROMPT_plan.md as the prompt file.`,
+	Long:  `Run the agentic loop in plan mode using .ralph/PROMPT.md as the prompt file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Validate agent provider
 		agentProvider, err := loop.ValidateAgentProvider(planAgent)
@@ -24,7 +24,7 @@ var planCmd = &cobra.Command{
 
 		return loop.Run(loop.Config{
 			Mode:          loop.ModePlan,
-			PromptFile:    ".ralph/PROMPT_plan.md",
+			PromptFile:    loop.PromptFile,
 			PlanFile:      loop.GeneratePlanPath(),
 			MaxIterations: planMaxIterations,
 			NoPush:        planNoPush,

@@ -14,7 +14,7 @@ var buildAgent string
 var buildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Run the agentic loop in build mode",
-	Long:  `Run Claude Code in build mode using .ralph/PROMPT_build.md as the prompt file.`,
+	Long:  `Run the agentic loop in build mode using .ralph/PROMPT.md as the prompt file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Validate agent provider
 		agentProvider, err := loop.ValidateAgentProvider(buildAgent)
@@ -24,7 +24,7 @@ var buildCmd = &cobra.Command{
 
 		return loop.Run(loop.Config{
 			Mode:          loop.ModeBuild,
-			PromptFile:    ".ralph/PROMPT_build.md",
+			PromptFile:    loop.PromptFile,
 			PlanFile:      loop.GeneratePlanPath(),
 			MaxIterations: buildMaxIterations,
 			NoPush:        buildNoPush,
