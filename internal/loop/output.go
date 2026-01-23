@@ -59,7 +59,7 @@ var (
 )
 
 // FormatHeader renders the loop header with configuration info
-func FormatHeader(w io.Writer, cfg Config, branch string) {
+func FormatHeader(w io.Writer, cfg Config, branch string, model string) {
 	var maxLine string
 	if cfg.MaxIterations > 0 {
 		maxLine = fmt.Sprintf("\n%s %d iterations", dimStyle.Render("Max:"), cfg.MaxIterations)
@@ -71,9 +71,10 @@ func FormatHeader(w io.Writer, cfg Config, branch string) {
 		agentName = "claude"
 	}
 
-	content := fmt.Sprintf("%s %s  %s %s\n%s %s\n%s %s%s",
+	content := fmt.Sprintf("%s %s  %s %s\n%s %s\n%s %s\n%s %s%s",
 		dimStyle.Render("Mode:"), titleStyle.Render(string(cfg.Mode)),
 		dimStyle.Render("Agent:"), titleStyle.Render(agentName),
+		dimStyle.Render("Model:"), model,
 		dimStyle.Render("Prompt:"), cfg.PromptFile,
 		dimStyle.Render("Branch:"), successStyle.Render(branch),
 		maxLine,

@@ -37,7 +37,7 @@ func Run(cfg Config) error {
 	}
 
 	// Print configuration
-	FormatHeader(cfg.Output, cfg, branch)
+	FormatHeader(cfg.Output, cfg, branch, provider.Model())
 
 	iteration := 0
 	for {

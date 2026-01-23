@@ -13,6 +13,8 @@ import (
 type Provider interface {
 	// Name returns the provider name for display purposes
 	Name() string
+	// Model returns the model being used by this provider
+	Model() string
 	// BuildCommand creates the command to execute with the given prompt
 	BuildCommand(prompt []byte) (*exec.Cmd, error)
 	// ParseOutput parses the agent output and returns the result summary
@@ -39,6 +41,11 @@ type ClaudeProvider struct {
 // Name returns the provider name
 func (p *ClaudeProvider) Name() string {
 	return "claude"
+}
+
+// Model returns the model being used
+func (p *ClaudeProvider) Model() string {
+	return "claude-sonnet-4-20250514"
 }
 
 // BuildCommand creates the claude command
@@ -170,6 +177,11 @@ type CodexProvider struct {
 // Name returns the provider name
 func (p *CodexProvider) Name() string {
 	return "codex"
+}
+
+// Model returns the model being used
+func (p *CodexProvider) Model() string {
+	return "codex-mini-latest"
 }
 
 // BuildCommand creates the codex command
