@@ -193,7 +193,7 @@ func buildRLMPrompt(cfg Config, state *StateManager, iteration int) ([]byte, err
 	// Build RLM principle #3 based on noPush setting
 	var rlmPrinciple3 string
 	if cfg.NoPush {
-		rlmPrinciple3 = "3. **One task per iteration**: Complete ONE task, update state, exit."
+		rlmPrinciple3 = "3. **One task per iteration**: Complete ONE task, implement changes, update state, exit."
 	} else {
 		rlmPrinciple3 = "3. **One task per iteration**: Complete ONE task, update state, commit, exit."
 	}
