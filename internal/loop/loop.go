@@ -74,12 +74,10 @@ func Run(cfg Config) error {
 
 		// Show loop banner before iteration (with phase if RLM mode)
 		if cfg.RLM.Enabled && stateManager != nil {
-			session, _ := stateManager.LoadSession()
-			if session != nil {
-				FormatLoopBannerWithPhase(cfg.Output, iteration, session.Phase)
-			} else {
-				FormatLoopBanner(cfg.Output, iteration)
-			}
+			// Use inferred phase (same as what prompt receives) for consistent display
+			router := NewPhaseRouter(stateManager)
+			inferredPhase, _ := router.InferPhase()
+			FormatLoopBannerWithPhase(cfg.Output, iteration, inferredPhase)
 		} else {
 			FormatLoopBanner(cfg.Output, iteration)
 		}

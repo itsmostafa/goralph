@@ -223,13 +223,29 @@ Update context.json focus set (read existing file first, update focus, then writ
 
 const actPhaseGuidance = `## Phase: ACT
 
-**Objective:** Implement the planned changes.
+**CRITICAL:** You are in the IMPLEMENTATION phase. DO NOT plan. DO NOT analyze. IMPLEMENT NOW.
+
+The planning phase is COMPLETE. Your focus set has been identified.
+
+**Your ONLY job in this phase:** Make the actual code changes.
+
+**DO NOT:**
+- Create more plans or task lists
+- Analyze or explore the codebase further
+- Discuss what you "would" do - DO IT
+- Ask questions or seek clarification
+- Say you need to "plan" or "continue planning"
+
+**DO:**
+- Use the Edit tool to modify files
+- Use the Write tool to create new files
+- Make real, concrete code changes NOW
 
 **Actions:**
-1. Review focus set from context.json
-2. Implement changes in identified files
-3. Follow existing code patterns and conventions
-4. Write minimal, focused changes
+1. Read the focus files from context.json
+2. WRITE CODE - Edit or create files as needed
+3. Follow existing patterns
+4. Keep changes minimal and focused
 
 **State File Updates:**
 
