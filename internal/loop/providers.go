@@ -192,6 +192,10 @@ func processClaudeUserMessage(line []byte, w io.Writer, state *StreamState) {
 			}
 		}
 	}
+
+	// Reset text tracking for the next assistant message turn
+	// This ensures new assistant text after tools is fully displayed
+	state.LastTextLen = 0
 }
 
 // CodexProvider implements Provider for OpenAI Codex agent
