@@ -23,7 +23,7 @@ func (pr *PhaseRouter) InferPhase() (Phase, error) {
 	}
 
 	// First iteration always starts with PLAN
-	if session.Iteration == 0 {
+	if session.Iteration <= 1 {
 		return PhasePlan, nil
 	}
 
