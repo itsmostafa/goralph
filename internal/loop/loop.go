@@ -134,7 +134,7 @@ func runIterationWithRLM(cfg Config, provider Provider, iteration int, state *St
 		}
 	} else {
 		// Build standard prompt
-		promptContent, err = buildPromptWithPlan(cfg.PromptFile, cfg.PlanFile, iteration, cfg.MaxIterations)
+		promptContent, err = buildPromptWithPlan(cfg.PromptFile, cfg.PlanFile, iteration, cfg.MaxIterations, cfg.NoPush)
 		if err != nil {
 			return false, false, err
 		}

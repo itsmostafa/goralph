@@ -43,7 +43,7 @@ var runCmd = &cobra.Command{
 
 func init() {
 	runCmd.Flags().IntVarP(&maxIterations, "max", "n", 0, "Maximum number of iterations (0 = unlimited)")
-	runCmd.Flags().BoolVar(&noPush, "no-push", false, "Skip pushing changes after each iteration")
+	runCmd.Flags().BoolVar(&noPush, "no-push", false, "Skip committing and pushing changes after each iteration")
 
 	// Agent provider flag with env var fallback
 	defaultAgent := "claude"

@@ -26,7 +26,7 @@ func resetImplementationPlan(planFile string) error {
 }
 
 // buildPromptWithPlan reads the prompt file and appends the implementation plan with instructions
-func buildPromptWithPlan(promptFile string, planFile string, iteration int, maxIterations int) ([]byte, error) {
+func buildPromptWithPlan(promptFile string, planFile string, iteration int, maxIterations int, noPush bool) ([]byte, error) {
 	// Read the prompt file
 	promptContent, err := os.ReadFile(promptFile)
 	if err != nil {
@@ -47,8 +47,32 @@ func buildPromptWithPlan(promptFile string, planFile string, iteration int, maxI
 		iterationStr = fmt.Sprintf("%d/unlimited", iteration)
 	}
 
-	// Build system context
-	systemContext := fmt.Sprintf(`# System Context
+	// Build system context based on noPush setting
+	var systemContext string
+	if noPush {
+		systemContext = fmt.Sprintf(`# System Context
+
+You are running in a **goralph agentic loop** - an automated iteration system that manages your context between runs.
+
+**Key facts:**
+- Iteration: %s
+- Each iteration runs with a fresh context window
+- Focus on completing ONE task per iteration
+- After completing a task: update the implementation plan, then exit
+- The loop will automatically restart
+
+**Workflow:**
+1. Study the implementation plan below
+2. Pick the most important uncompleted task
+3. Complete that single task
+4. Update the implementation plan to mark it complete
+5. Exit - the loop handles the rest
+
+---
+
+`, iterationStr)
+	} else {
+		systemContext = fmt.Sprintf(`# System Context
 
 You are running in a **goralph agentic loop** - an automated iteration system that manages your context between runs.
 
@@ -70,6 +94,7 @@ You are running in a **goralph agentic loop** - an automated iteration system th
 ---
 
 `, iterationStr)
+	}
 
 	// Build task guidance based on whether max iterations is set
 	var taskGuidance string
@@ -77,6 +102,19 @@ You are running in a **goralph agentic loop** - an automated iteration system th
 		taskGuidance = fmt.Sprintf(`If the Tasks section is empty, analyze the project and break the work into approximately %d tasks (one per iteration).`, maxIterations)
 	} else {
 		taskGuidance = `If the Tasks section is empty, analyze the project and add a comprehensive list of implementation tasks.`
+	}
+
+	// Build completion steps based on noPush setting
+	var completionSteps string
+	if noPush {
+		completionSteps = `Complete ONE task, then:
+1. Update ` + "`" + planFile + "`" + ` to mark the task as completed (move to Completed section)
+2. Exit`
+	} else {
+		completionSteps = `Complete ONE task, then:
+1. Update ` + "`" + planFile + "`" + ` to mark the task as completed (move to Completed section)
+2. Commit your changes with a descriptive message
+3. Exit`
 	}
 
 	// Build instructions to append
@@ -89,10 +127,7 @@ Study the implementation plan below. Pick the most important uncompleted task.
 
 ` + taskGuidance + `
 
-Complete ONE task, then:
-1. Update ` + "`" + planFile + "`" + ` to mark the task as completed (move to Completed section)
-2. Commit your changes with a descriptive message
-3. Exit
+` + completionSteps + `
 
 **Completion Promise:**
 When ALL tasks in the plan are complete and there is no more work to do, output this exact line:
@@ -155,6 +190,14 @@ func buildRLMPrompt(cfg Config, state *StateManager, iteration int) ([]byte, err
 		iterationStr = fmt.Sprintf("%d/unlimited", iteration)
 	}
 
+	// Build RLM principle #3 based on noPush setting
+	var rlmPrinciple3 string
+	if cfg.NoPush {
+		rlmPrinciple3 = "3. **One task per iteration**: Complete ONE task, update state, exit."
+	} else {
+		rlmPrinciple3 = "3. **One task per iteration**: Complete ONE task, update state, commit, exit."
+	}
+
 	// Build system context with RLM principles
 	systemContext := fmt.Sprintf(`# System Context
 
@@ -164,7 +207,7 @@ You are running in a **goralph RLM-enhanced agentic loop**.
 
 1. **Context is external**: The full codebase is NOT in your context. Use tools to explore.
 2. **State persists**: Discoveries are stored in %s. Reference previous findings.
-3. **One task per iteration**: Complete ONE task, update state, commit, exit.
+%s
 4. **Verify before commit**: Run relevant checks before marking complete.
 
 ## Session Info
@@ -184,7 +227,7 @@ You are running in a **goralph RLM-enhanced agentic loop**.
 
 ---
 
-`, StateDir, iterationStr, session.SessionID, phase, PhaseDisplayName(phase),
+`, StateDir, rlmPrinciple3, iterationStr, session.SessionID, phase, PhaseDisplayName(phase),
 		session.Depth, cfg.RLM.MaxDepth,
 		StateDir, StateDir, StateDir, StateDir, StateDir)
 
@@ -203,7 +246,7 @@ You are running in a **goralph RLM-enhanced agentic loop**.
 	systemContext += phaseGuidance + "\n\n---\n\n"
 
 	// Add RLM marker instructions
-	systemContext += rlmMarkerInstructions + "\n---\n\n"
+	systemContext += getRLMMarkerInstructions(cfg.NoPush) + "\n---\n\n"
 
 	// Add the user's task
 	systemContext += "# Task\n\n"
@@ -278,22 +321,24 @@ func formatHistorySection(entries []HistoryEntry) string {
 	return section
 }
 
-// rlmMarkerInstructions contains instructions for RLM output markers
-const rlmMarkerInstructions = `## RLM Output Markers
+// getRLMMarkerInstructions returns instructions for RLM output markers based on noPush setting
+func getRLMMarkerInstructions(noPush bool) string {
+	base := "## RLM Output Markers\n\n" +
+		"Use these markers to communicate state transitions:\n\n" +
+		"1. **Phase transition:** Signal which phase to enter next:\n" +
+		"   `<rlm:phase>PHASE_NAME</rlm:phase>`\n" +
+		"   Valid phases: PLAN, SEARCH, NARROW, ACT, VERIFY\n\n" +
+		"2. **Verification passed:** Signal that verification succeeded:\n" +
+		"   `<rlm:verified>true</rlm:verified>`\n\n" +
+		"3. **Session complete:** Signal all tasks are done:\n" +
+		"   `<promise>COMPLETE</promise>`"
 
-Use these markers to communicate state transitions:
+	if !noPush {
+		base += "\n\n**Important:** Always commit your changes before signaling completion."
+	}
 
-1. **Phase transition:** Signal which phase to enter next:
-   ` + "`" + `<rlm:phase>PHASE_NAME</rlm:phase>` + "`" + `
-   Valid phases: PLAN, SEARCH, NARROW, ACT, VERIFY
-
-2. **Verification passed:** Signal that verification succeeded:
-   ` + "`" + `<rlm:verified>true</rlm:verified>` + "`" + `
-
-3. **Session complete:** Signal all tasks are done:
-   ` + "`" + `<promise>COMPLETE</promise>` + "`" + `
-
-**Important:** Always commit your changes before signaling completion.`
+	return base
+}
 
 // saveContextToFile saves the context manifest to a JSON file for agent access
 func saveContextToFile(ctx *ContextManifest, stateDir string) error {
