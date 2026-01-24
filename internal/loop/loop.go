@@ -240,8 +240,13 @@ func runIterationWithRLM(cfg Config, provider Provider, iteration int, state *St
 		}
 	}
 
-	// Run verification if enabled and agent signaled verified
-	if verifier != nil && verifier.HasCommands() && resultMsg != nil && resultMsg.RLMVerified {
+	// Run verification if enabled (in RLM mode, also requires agent signal)
+	runVerification := verifier != nil && verifier.HasCommands()
+	if cfg.RLM.Enabled {
+		// In RLM mode, only run verification when agent signals <rlm:verified>
+		runVerification = runVerification && resultMsg != nil && resultMsg.RLMVerified
+	}
+	if runVerification {
 		fmt.Fprintln(cfg.Output)
 		fmt.Fprintln(cfg.Output, dimStyle.Render("Running verification..."))
 
