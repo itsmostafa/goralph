@@ -139,6 +139,7 @@ type StreamState struct {
 	CompletedTools  map[string]bool
 	AccumulatedText strings.Builder // All text content for pattern detection
 	NeedsNewline    bool            // Whether a newline is needed before next tool indicator
+	PendingToolIDs  []string        // Ordered list of tool IDs that are still running
 }
 
 // NewStreamState creates a new StreamState with initialized maps

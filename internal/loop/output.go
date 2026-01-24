@@ -177,18 +177,74 @@ func FormatTextDelta(w io.Writer, text string) {
 	fmt.Fprint(w, text)
 }
 
-// FormatToolStart writes a tool invocation indicator
-func FormatToolStart(w io.Writer, toolName string) {
+// ANSI escape codes for cursor control
+const (
+	ansiCursorUp   = "\033[%dA" // Move cursor up n lines
+	ansiCursorDown = "\033[%dB" // Move cursor down n lines
+	ansiClearLine  = "\033[2K"  // Clear entire current line
+)
+
+// moveCursorUp moves the cursor up n lines
+func moveCursorUp(w io.Writer, n int) {
+	if n > 0 {
+		fmt.Fprintf(w, ansiCursorUp, n)
+	}
+}
+
+// moveCursorDown moves the cursor down n lines
+func moveCursorDown(w io.Writer, n int) {
+	if n > 0 {
+		fmt.Fprintf(w, ansiCursorDown, n)
+	}
+}
+
+// clearLine clears the current line
+func clearLine(w io.Writer) {
+	fmt.Fprint(w, ansiClearLine)
+}
+
+// FormatToolStart writes a tool invocation indicator and tracks the tool
+func FormatToolStart(w io.Writer, toolID, toolName string, state *StreamState) {
 	indicator := toolActiveStyle.Render("●")
 	name := toolNameStyle.Render(toolName)
 	fmt.Fprintf(w, "%s %s running...\n", indicator, name)
+	state.PendingToolIDs = append(state.PendingToolIDs, toolID)
 }
 
-// FormatToolComplete writes a tool completion indicator
-func FormatToolComplete(w io.Writer, toolName string) {
+// FormatToolComplete replaces the running indicator with done in-place
+func FormatToolComplete(w io.Writer, toolID, toolName string, state *StreamState) {
+	// Find position of this tool in pending list
+	pos := -1
+	for i, id := range state.PendingToolIDs {
+		if id == toolID {
+			pos = i
+			break
+		}
+	}
+	if pos == -1 {
+		// Tool not found in pending list, just print done on new line
+		indicator := toolCompleteStyle.Render("✓")
+		name := toolNameStyle.Render(toolName)
+		fmt.Fprintf(w, "%s %s done\n", indicator, name)
+		return
+	}
+
+	// Calculate lines to move up (tools after this one in the list, plus 1 for this tool's line)
+	linesUp := len(state.PendingToolIDs) - pos
+
+	// Move up to this tool's line, clear it, print done
+	moveCursorUp(w, linesUp)
+	clearLine(w)
 	indicator := toolCompleteStyle.Render("✓")
 	name := toolNameStyle.Render(toolName)
-	fmt.Fprintf(w, "%s %s done\n", indicator, name)
+	fmt.Fprintf(w, "\r%s %s done", indicator, name)
+
+	// Move back down to where we were and reset to column 0
+	moveCursorDown(w, linesUp)
+	fmt.Fprint(w, "\r")
+
+	// Remove from pending list
+	state.PendingToolIDs = append(state.PendingToolIDs[:pos], state.PendingToolIDs[pos+1:]...)
 }
 
 // FormatLoopBannerWithPhase renders the loop iteration banner with RLM phase
