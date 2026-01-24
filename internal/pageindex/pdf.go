@@ -514,7 +514,7 @@ func (p *PDFProcessor) splitNode(ctx context.Context, node *TreeNode, pages []Pa
 }
 
 // splitNodeByPages splits a node evenly by page count.
-func (p *PDFProcessor) splitNodeByPages(node *TreeNode, pages []PageContent) []*TreeNode {
+func (p *PDFProcessor) splitNodeByPages(node *TreeNode, _ []PageContent) []*TreeNode {
 	totalPages := node.EndIdx - node.StartIdx + 1
 	if totalPages <= p.config.MaxPageNumEachNode {
 		return nil
