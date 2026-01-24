@@ -302,3 +302,258 @@ func truncate(s string, maxLen int) string {
 	}
 	return s[:maxLen-3] + "..."
 }
+
+// ClaudeProvider implements LLMProvider using Anthropic's Claude API.
+type ClaudeProvider struct {
+	apiKey     string
+	model      string
+	httpClient *http.Client
+	maxRetries int
+}
+
+// ClaudeRequest represents the request body for Claude's messages API.
+type ClaudeRequest struct {
+	Model       string          `json:"model"`
+	MaxTokens   int             `json:"max_tokens"`
+	Messages    []ClaudeMessage `json:"messages"`
+	Temperature float64         `json:"temperature,omitempty"`
+}
+
+// ClaudeMessage represents a message in the Claude format.
+type ClaudeMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// ClaudeResponse represents the response from Claude's messages API.
+type ClaudeResponse struct {
+	ID           string `json:"id"`
+	Type         string `json:"type"`
+	Role         string `json:"role"`
+	Model        string `json:"model"`
+	StopReason   string `json:"stop_reason"`
+	StopSequence string `json:"stop_sequence,omitempty"`
+	Content      []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	} `json:"content"`
+	Usage struct {
+		InputTokens  int `json:"input_tokens"`
+		OutputTokens int `json:"output_tokens"`
+	} `json:"usage"`
+	Error *ClaudeError `json:"error,omitempty"`
+}
+
+// ClaudeError represents an error response from Claude.
+type ClaudeError struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+}
+
+// NewClaudeProvider creates a new Claude provider.
+func NewClaudeProvider(model string) (*ClaudeProvider, error) {
+	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("ANTHROPIC_API_KEY environment variable not set")
+	}
+	if model == "" {
+		model = "claude-sonnet-4-20250514"
+	}
+	return &ClaudeProvider{
+		apiKey:     apiKey,
+		model:      model,
+		httpClient: &http.Client{Timeout: 120 * time.Second},
+		maxRetries: 10,
+	}, nil
+}
+
+// Model returns the model identifier.
+func (p *ClaudeProvider) Model() string {
+	return p.model
+}
+
+// Complete sends a prompt and returns the response.
+func (p *ClaudeProvider) Complete(ctx context.Context, prompt string) (string, error) {
+	return p.CompleteWithHistory(ctx, []Message{{Role: "user", Content: prompt}})
+}
+
+// CompleteWithHistory sends a prompt with conversation history.
+func (p *ClaudeProvider) CompleteWithHistory(ctx context.Context, messages []Message) (string, error) {
+	// Convert to Claude format
+	claudeMessages := make([]ClaudeMessage, len(messages))
+	for i, m := range messages {
+		claudeMessages[i] = ClaudeMessage{Role: m.Role, Content: m.Content}
+	}
+
+	req := ClaudeRequest{
+		Model:       p.model,
+		MaxTokens:   8192,
+		Messages:    claudeMessages,
+		Temperature: 0,
+	}
+
+	var lastErr error
+	for attempt := 0; attempt < p.maxRetries; attempt++ {
+		body, err := json.Marshal(req)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal request: %w", err)
+		}
+
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(body))
+		if err != nil {
+			return "", fmt.Errorf("failed to create request: %w", err)
+		}
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("x-api-key", p.apiKey)
+		httpReq.Header.Set("anthropic-version", "2023-06-01")
+
+		resp, err := p.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = err
+			time.Sleep(time.Second)
+			continue
+		}
+
+		respBody, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = err
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+			// Handle rate limiting with exponential backoff
+			if resp.StatusCode == 429 || resp.StatusCode >= 500 {
+				time.Sleep(time.Duration(attempt+1) * time.Second)
+				continue
+			}
+			return "", lastErr
+		}
+
+		var claudeResp ClaudeResponse
+		if err := json.Unmarshal(respBody, &claudeResp); err != nil {
+			lastErr = fmt.Errorf("failed to parse response: %w", err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if claudeResp.Error != nil {
+			lastErr = fmt.Errorf("API error: %s", claudeResp.Error.Message)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if len(claudeResp.Content) == 0 {
+			lastErr = fmt.Errorf("no content in response")
+			time.Sleep(time.Second)
+			continue
+		}
+
+		// Concatenate all text blocks
+		var result strings.Builder
+		for _, block := range claudeResp.Content {
+			if block.Type == "text" {
+				result.WriteString(block.Text)
+			}
+		}
+
+		return result.String(), nil
+	}
+
+	return "", fmt.Errorf("max retries exceeded: %w", lastErr)
+}
+
+// CompleteWithFinishReason sends a prompt and returns both response and finish reason.
+func (p *ClaudeProvider) CompleteWithFinishReason(ctx context.Context, prompt string, history []Message) (string, string, error) {
+	messages := append(history, Message{Role: "user", Content: prompt})
+	claudeMessages := make([]ClaudeMessage, len(messages))
+	for i, m := range messages {
+		claudeMessages[i] = ClaudeMessage{Role: m.Role, Content: m.Content}
+	}
+
+	req := ClaudeRequest{
+		Model:       p.model,
+		MaxTokens:   8192,
+		Messages:    claudeMessages,
+		Temperature: 0,
+	}
+
+	var lastErr error
+	for attempt := 0; attempt < p.maxRetries; attempt++ {
+		body, err := json.Marshal(req)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to marshal request: %w", err)
+		}
+
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(body))
+		if err != nil {
+			return "", "", fmt.Errorf("failed to create request: %w", err)
+		}
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("x-api-key", p.apiKey)
+		httpReq.Header.Set("anthropic-version", "2023-06-01")
+
+		resp, err := p.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = err
+			time.Sleep(time.Second)
+			continue
+		}
+
+		respBody, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = err
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+			if resp.StatusCode == 429 || resp.StatusCode >= 500 {
+				time.Sleep(time.Duration(attempt+1) * time.Second)
+				continue
+			}
+			return "", "", lastErr
+		}
+
+		var claudeResp ClaudeResponse
+		if err := json.Unmarshal(respBody, &claudeResp); err != nil {
+			lastErr = fmt.Errorf("failed to parse response: %w", err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if claudeResp.Error != nil {
+			lastErr = fmt.Errorf("API error: %s", claudeResp.Error.Message)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if len(claudeResp.Content) == 0 {
+			lastErr = fmt.Errorf("no content in response")
+			time.Sleep(time.Second)
+			continue
+		}
+
+		// Concatenate all text blocks
+		var result strings.Builder
+		for _, block := range claudeResp.Content {
+			if block.Type == "text" {
+				result.WriteString(block.Text)
+			}
+		}
+
+		// Map stop_reason to finish reason
+		finishReason := "finished"
+		if claudeResp.StopReason == "max_tokens" {
+			finishReason = "max_output_reached"
+		}
+
+		return result.String(), finishReason, nil
+	}
+
+	return "", "", fmt.Errorf("max retries exceeded: %w", lastErr)
+}
