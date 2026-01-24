@@ -71,12 +71,24 @@ func FormatHeader(w io.Writer, cfg Config, branch string, model string) {
 		agentName = "claude"
 	}
 
-	content := fmt.Sprintf("%s %s\n%s %s\n%s %s\n%s %s%s",
+	// Build mode indicator
+	var modeLine string
+	if cfg.RLM.Enabled {
+		modeLine = fmt.Sprintf("\n%s %s", dimStyle.Render("Mode:"), titleStyle.Render("RLM"))
+		if cfg.VerifyEnabled {
+			modeLine += " + " + successStyle.Render("Verify")
+		}
+	} else if cfg.VerifyEnabled {
+		modeLine = fmt.Sprintf("\n%s %s", dimStyle.Render("Mode:"), successStyle.Render("Verify"))
+	}
+
+	content := fmt.Sprintf("%s %s\n%s %s\n%s %s\n%s %s%s%s",
 		dimStyle.Render("Agent:"), titleStyle.Render(agentName),
 		dimStyle.Render("Model:"), model,
 		dimStyle.Render("Prompt:"), cfg.PromptFile,
 		dimStyle.Render("Branch:"), successStyle.Render(branch),
 		maxLine,
+		modeLine,
 	)
 
 	fmt.Fprintln(w, headerBoxStyle.Render(content))
@@ -177,4 +189,35 @@ func FormatToolComplete(w io.Writer, toolName string) {
 	indicator := toolCompleteStyle.Render("✓")
 	name := toolNameStyle.Render(toolName)
 	fmt.Fprintf(w, "%s %s done\n", indicator, name)
+}
+
+// FormatLoopBannerWithPhase renders the loop iteration banner with RLM phase
+func FormatLoopBannerWithPhase(w io.Writer, iteration int, phase Phase) {
+	phaseName := PhaseDisplayName(phase)
+	banner := fmt.Sprintf(" LOOP %d · %s ", iteration, phaseName)
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, loopBannerStyle.Render(banner))
+	fmt.Fprintln(w)
+}
+
+// FormatVerificationPassed renders verification success message
+func FormatVerificationPassed(w io.Writer) {
+	content := successStyle.Render("✓ Verification Passed")
+	fmt.Fprintln(w, content)
+}
+
+// FormatVerificationFailed renders verification failure message with details
+func FormatVerificationFailed(w io.Writer, report VerificationReport) {
+	content := errorStyle.Render("✗ Verification Failed") + "\n"
+	for _, check := range report.Checks {
+		if check.Passed {
+			content += fmt.Sprintf("  %s %s\n", successStyle.Render("✓"), check.Name)
+		} else {
+			content += fmt.Sprintf("  %s %s\n", errorStyle.Render("✗"), check.Name)
+			if check.Error != "" {
+				content += fmt.Sprintf("    %s\n", dimStyle.Render(check.Error))
+			}
+		}
+	}
+	fmt.Fprintln(w, boxStyle.Render(content))
 }
