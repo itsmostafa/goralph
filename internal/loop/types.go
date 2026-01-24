@@ -19,12 +19,15 @@ const (
 
 // Config holds the loop configuration
 type Config struct {
-	PromptFile    string
-	PlanFile      string // Session-scoped plan file path
-	MaxIterations int
-	NoPush        bool
-	Agent         AgentProvider
-	Output        io.Writer
+	PromptFile     string
+	PlanFile       string // Session-scoped plan file path
+	MaxIterations  int
+	NoPush         bool
+	Agent          AgentProvider
+	Output         io.Writer
+	RLM            RLMConfig // RLM mode configuration
+	VerifyEnabled  bool      // Run verification before commit
+	VerifyCommands []string  // Custom verification commands (auto-detected if empty)
 }
 
 // GeneratePlanPath returns a timestamped path for a new session-scoped plan file.
@@ -80,6 +83,8 @@ type ResultMessage struct {
 	Usage           Usage   `json:"usage"`
 	HasCost         bool    `json:"-"` // Internal field: true if provider supplies cost data
 	SessionComplete bool    `json:"-"` // Internal: true if agent emitted completion promise
+	RLMPhase        Phase   `json:"-"` // Internal: detected phase from RLM markers
+	RLMVerified     bool    `json:"-"` // Internal: true if agent emitted verified marker
 }
 
 // Usage represents token usage statistics
