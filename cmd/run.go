@@ -10,6 +10,9 @@ import (
 var maxIterations int
 var noPush bool
 var agent string
+var rlmEnabled bool
+var verifyEnabled bool
+var maxDepth int
 
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -29,6 +32,11 @@ var runCmd = &cobra.Command{
 			NoPush:        noPush,
 			Agent:         agentProvider,
 			Output:        cmd.OutOrStdout(),
+			RLM: loop.RLMConfig{
+				Enabled:  rlmEnabled,
+				MaxDepth: maxDepth,
+			},
+			VerifyEnabled: verifyEnabled,
 		})
 	},
 }
@@ -43,6 +51,11 @@ func init() {
 		defaultAgent = envAgent
 	}
 	runCmd.Flags().StringVar(&agent, "agent", defaultAgent, "Agent provider to use (claude, codex)")
+
+	// RLM mode flags
+	runCmd.Flags().BoolVar(&rlmEnabled, "rlm", false, "Enable RLM (Recursive Language Model) mode")
+	runCmd.Flags().BoolVar(&verifyEnabled, "verify", false, "Run verification (build/test) before commit")
+	runCmd.Flags().IntVar(&maxDepth, "max-depth", 3, "Maximum recursion depth for RLM mode")
 
 	rootCmd.AddCommand(runCmd)
 }
