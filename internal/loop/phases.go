@@ -89,15 +89,32 @@ const planPhaseGuidance = `## Phase: PLAN
 1. Read and analyze the task from PROMPT.md
 2. Identify key objectives and constraints
 3. Create high-level implementation steps
-4. Update context manifest with task summary
+4. Update context.json with task summary
 
-**State updates:**
-- Write task summary to context.json
-- Record initial analysis in history
+**State File Updates:**
+
+Update .ralph/state/context.json with task info:
+` + "```json" + `
+{
+  "task": {
+    "summary": "Brief description of the task",
+    "objectives": ["objective1", "objective2"],
+    "constraints": ["constraint1"]
+  },
+  "codebase": {
+    "root_dir": ".",
+    "language": "go",
+    "build_system": "taskfile"
+  },
+  "discoveries": [],
+  "focus": {"files": [], "functions": [], "tests": []},
+  "last_updated": "2024-01-23T10:30:00Z"
+}
+` + "```" + `
 
 **Exit criteria:**
 - Task objectives are clear
-- Implementation approach is documented
+- context.json updated with task summary
 - Ready to search for relevant code
 
 **Output:** Signal phase completion with:
@@ -111,16 +128,46 @@ const searchPhaseGuidance = `## Phase: SEARCH
 1. Use grep/glob to find files related to the task
 2. Read key files to understand existing patterns
 3. Identify dependencies and related code
-4. Record discoveries for future reference
+4. Record discoveries in state files
 
-**State updates:**
-- Store search results in .ralph/state/search/
-- Add discoveries to context.json
-- Update history with findings
+**State File Updates:**
+
+After searching, create a search result file:
+` + "```" + `
+.ralph/state/search/search_NNNN_TIMESTAMP.json
+` + "```" + `
+
+Schema (create this file using the Write tool):
+` + "```json" + `
+{
+  "iteration": 1,
+  "query": "description of what you searched for",
+  "type": "grep|glob|semantic",
+  "results": ["file1.go", "file2.go"],
+  "timestamp": "2024-01-23T10:30:00Z"
+}
+` + "```" + `
+
+Also update context.json with discoveries (read existing file first, merge in new discoveries, then write back):
+` + "```json" + `
+{
+  "discoveries": [
+    {
+      "iteration": 1,
+      "phase": "SEARCH",
+      "type": "file|function|pattern|dependency",
+      "path": "path/to/file.go",
+      "description": "What you found",
+      "relevance": "high|medium|low"
+    }
+  ]
+}
+` + "```" + `
 
 **Exit criteria:**
 - Relevant files and functions identified
-- Understanding of existing patterns
+- Search results saved to .ralph/state/search/
+- Discoveries added to context.json
 - Ready to narrow focus
 
 **Output:** Signal phase completion with:
@@ -131,19 +178,44 @@ const narrowPhaseGuidance = `## Phase: NARROW
 **Objective:** Focus on specific files and functions for modification.
 
 **Actions:**
-1. Review discoveries from search phase
+1. Review discoveries from context.json
 2. Select specific files to modify
 3. Identify exact functions/locations for changes
-4. Validate approach against existing patterns
+4. Save narrowed set to state
 
-**State updates:**
-- Store narrowed set in .ralph/state/narrow/
-- Update focus in context.json
-- Record rationale in history
+**State File Updates:**
+
+Create a narrowed set file:
+` + "```" + `
+.ralph/state/narrow/narrow_NNNN_TIMESTAMP.json
+` + "```" + `
+
+Schema (create this file using the Write tool):
+` + "```json" + `
+{
+  "iteration": 2,
+  "description": "What this narrowed set covers",
+  "files": ["path/to/file1.go", "path/to/file2.go"],
+  "functions": ["FunctionA", "FunctionB"],
+  "rationale": "Why these files/functions were selected"
+}
+` + "```" + `
+
+Update context.json focus set (read existing file first, update focus, then write back):
+` + "```json" + `
+{
+  "focus": {
+    "files": ["path/to/file1.go"],
+    "functions": ["FunctionA"],
+    "tests": ["path/to/file_test.go"]
+  }
+}
+` + "```" + `
 
 **Exit criteria:**
 - Specific files and functions identified
-- Clear understanding of required changes
+- Narrowed set saved to .ralph/state/narrow/
+- Focus updated in context.json
 - Ready to implement
 
 **Output:** Signal phase completion with:
@@ -154,18 +226,38 @@ const actPhaseGuidance = `## Phase: ACT
 **Objective:** Implement the planned changes.
 
 **Actions:**
-1. Review focus set from narrow phase
+1. Review focus set from context.json
 2. Implement changes in identified files
 3. Follow existing code patterns and conventions
 4. Write minimal, focused changes
 
-**State updates:**
-- Record changes made in history
-- Update any affected discoveries
+**State File Updates:**
+
+After implementing, record results in a results file:
+` + "```" + `
+.ralph/state/results/act_NNNN_TIMESTAMP.json
+` + "```" + `
+
+Schema (create this file using the Write tool):
+` + "```json" + `
+{
+  "iteration": 3,
+  "phase": "ACT",
+  "changes": [
+    {
+      "file": "path/to/file.go",
+      "type": "modified|created|deleted",
+      "description": "What was changed"
+    }
+  ],
+  "timestamp": "2024-01-23T10:30:00Z"
+}
+` + "```" + `
 
 **Exit criteria:**
 - Changes implemented
 - Code follows existing patterns
+- Results recorded in .ralph/state/results/
 - Ready for verification
 
 **Output:** Signal phase completion with:
@@ -181,19 +273,43 @@ const verifyPhaseGuidance = `## Phase: VERIFY
 3. Check for any regressions
 4. Fix issues if found
 
-**State updates:**
-- Store verification results in .ralph/state/verification/
-- Update history with verification outcome
+**State File Updates:**
+
+Record verification results:
+` + "```" + `
+.ralph/state/verification/verify_NNNN_TIMESTAMP.json
+` + "```" + `
+
+Schema (create this file using the Write tool):
+` + "```json" + `
+{
+  "iteration": 3,
+  "passed": true,
+  "build": {
+    "command": "task build",
+    "success": true,
+    "output": "Build succeeded"
+  },
+  "tests": {
+    "command": "go test ./...",
+    "success": true,
+    "output": "All tests passed"
+  },
+  "timestamp": "2024-01-23T10:30:00Z"
+}
+` + "```" + `
 
 **If verification passes:**
-1. Signal verification success with: ` + "`" + `<rlm:verified>true</rlm:verified>` + "`" + `
-2. Commit your changes
-3. If all tasks complete: ` + "`" + `<promise>COMPLETE</promise>` + "`" + `
-4. Otherwise signal next search: ` + "`" + `<rlm:phase>SEARCH</rlm:phase>` + "`" + `
+1. Record success in verification file
+2. Signal verification success with: ` + "`" + `<rlm:verified>true</rlm:verified>` + "`" + `
+3. Commit your changes
+4. If all tasks complete: ` + "`" + `<promise>COMPLETE</promise>` + "`" + `
+5. Otherwise signal next search: ` + "`" + `<rlm:phase>SEARCH</rlm:phase>` + "`" + `
 
 **If verification fails:**
-1. Analyze failure
-2. Return to ACT phase to fix: ` + "`" + `<rlm:phase>ACT</rlm:phase>` + "`" + `
+1. Record failure in verification file
+2. Analyze failure
+3. Return to ACT phase to fix: ` + "`" + `<rlm:phase>ACT</rlm:phase>` + "`" + `
 `
 
 // PhaseDisplayName returns a human-readable name for the phase

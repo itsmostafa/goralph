@@ -1,10 +1,8 @@
 package loop
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 // resetImplementationPlan resets the implementation plan file to the initial template
@@ -245,6 +243,9 @@ You are running in a **goralph RLM-enhanced agentic loop**.
 	// Add phase-specific guidance
 	systemContext += phaseGuidance + "\n\n---\n\n"
 
+	// Add state file conventions
+	systemContext += stateFileInstructions + "\n\n---\n\n"
+
 	// Add RLM marker instructions
 	systemContext += getRLMMarkerInstructions(cfg.NoPush) + "\n---\n\n"
 
@@ -340,17 +341,38 @@ func getRLMMarkerInstructions(noPush bool) string {
 	return base
 }
 
-// saveContextToFile saves the context manifest to a JSON file for agent access
-func saveContextToFile(ctx *ContextManifest, stateDir string) error {
-	data, err := json.MarshalIndent(ctx, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal context: %w", err)
-	}
+// stateFileInstructions provides guidance for writing state files
+const stateFileInstructions = `## State File Conventions
 
-	path := filepath.Join(stateDir, "context.json")
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		return fmt.Errorf("failed to write context file: %w", err)
-	}
+**IMPORTANT:** You must write state files yourself using the Write tool. The loop cannot call your methods.
 
-	return nil
+**File naming:**
+- Search results: .ralph/state/search/search_NNNN_TIMESTAMP.json (NNNN = zero-padded iteration, e.g., 0001)
+- Narrowed sets: .ralph/state/narrow/narrow_NNNN_TIMESTAMP.json
+- Act results: .ralph/state/results/act_NNNN_TIMESTAMP.json
+- Verification: .ralph/state/verification/verify_NNNN_TIMESTAMP.json
+
+**Timestamps:** Use ISO 8601 format (e.g., "2024-01-23T10:30:00Z")
+
+**Reading previous state:**
+- Read .ralph/state/context.json for accumulated discoveries and focus
+- Read files in .ralph/state/search/ to see previous searches
+- Read files in .ralph/state/narrow/ to see previous narrowed sets
+
+**Writing state:**
+- Use the Write tool to create JSON files in the appropriate directories
+- For context.json: Read first, merge your new data with existing, then write back
+- Create directories if needed (they should already exist)
+
+**Context.json structure:**
+The context.json file accumulates information across iterations. Always preserve existing data when updating:
+` + "```json" + `
+{
+  "task": {"summary": "...", "objectives": [...], "constraints": [...]},
+  "codebase": {"root_dir": ".", "language": "go", "build_system": "taskfile"},
+  "discoveries": [...],
+  "focus": {"files": [...], "functions": [...], "tests": [...]},
+  "last_updated": "..."
 }
+` + "```" + `
+`
