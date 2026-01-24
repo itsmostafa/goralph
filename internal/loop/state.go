@@ -211,7 +211,8 @@ func (sm *StateManager) GetRecentHistory(n int) ([]HistoryEntry, error) {
 // StoreSearchResult stores a search query and its results
 func (sm *StateManager) StoreSearchResult(query SearchQuery) error {
 	query.Timestamp = time.Now()
-	filename := fmt.Sprintf("search_%d_%d.json", query.Iteration, time.Now().UnixMilli())
+	// Use zero-padded iteration for correct lexicographic ordering
+	filename := fmt.Sprintf("search_%04d_%d.json", query.Iteration, time.Now().UnixMilli())
 	path := filepath.Join(sm.baseDir, "search", filename)
 
 	data, err := json.MarshalIndent(query, "", "  ")
@@ -229,7 +230,8 @@ func (sm *StateManager) StoreSearchResult(query SearchQuery) error {
 // StoreNarrowedSet stores a narrowed context set
 func (sm *StateManager) StoreNarrowedSet(set NarrowedSet) error {
 	set.Timestamp = time.Now()
-	filename := fmt.Sprintf("narrow_%d_%d.json", set.Iteration, time.Now().UnixMilli())
+	// Use zero-padded iteration for correct lexicographic ordering
+	filename := fmt.Sprintf("narrow_%04d_%d.json", set.Iteration, time.Now().UnixMilli())
 	path := filepath.Join(sm.baseDir, "narrow", filename)
 
 	data, err := json.MarshalIndent(set, "", "  ")
@@ -264,7 +266,8 @@ func (sm *StateManager) StoreResult(name string, data any) error {
 // StoreVerification stores a verification report
 func (sm *StateManager) StoreVerification(report VerificationReport) error {
 	report.Timestamp = time.Now()
-	filename := fmt.Sprintf("verify_%d_%d.json", report.Iteration, time.Now().UnixMilli())
+	// Use zero-padded iteration for correct lexicographic ordering
+	filename := fmt.Sprintf("verify_%04d_%d.json", report.Iteration, time.Now().UnixMilli())
 	path := filepath.Join(sm.baseDir, "verification", filename)
 
 	data, err := json.MarshalIndent(report, "", "  ")
