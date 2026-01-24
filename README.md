@@ -24,6 +24,26 @@ Reference: [Ralph Wiggum Technique](https://github.com/ghuntley/how-to-ralph-wig
 - **Iteration Summaries** - Displays duration, token usage, cost, and status after each iteration
 - **JSON Logging** - Saves full agent output to timestamped JSONL files in `.ralph/logs/`
 - **Stream JSON Parsing** - Parses streaming JSON output from agents in real-time
+- **RLM Mode** - Recursive Language Model support for structured, stateful agent iterations
+
+## RLM Mode
+
+Go Ralph supports RLM (Recursive Language Model) mode, based on the research paper [arXiv:2512.24601](https://arxiv.org/abs/2512.24601). RLM mode uses a structured approach where state is persisted to files rather than relying on context window limits.
+
+Each iteration follows the RLM cycle: **PLAN → SEARCH → NARROW → ACT → VERIFY**
+
+```bash
+# Enable RLM mode
+goralph run --rlm
+
+# RLM mode with verification (runs build/test before commit)
+goralph run --rlm --verify
+
+# Set max recursion depth (default: 3)
+goralph run --rlm --max-depth 5
+```
+
+When RLM mode is enabled, state is persisted in `.ralph/state/` including session metadata, context manifests, and verification reports.
 
 ## Requirements
 
@@ -88,6 +108,9 @@ goralph run -n 10 --no-push --agent codex
 | `--max` | `-n` | Maximum number of iterations (0 = unlimited) |
 | `--no-push` | | Skip pushing changes after each iteration |
 | `--agent` | | Agent provider to use: `claude` (default) or `codex` |
+| `--rlm` | | Enable RLM (Recursive Language Model) mode |
+| `--verify` | | Run build/test verification before commit |
+| `--max-depth` | | Maximum recursion depth for RLM (default: 3) |
 
 ### Environment Variables
 
