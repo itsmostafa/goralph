@@ -117,13 +117,16 @@ func (p *ClaudeProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer
 		return nil, err
 	}
 
-	// Check for completion promise in accumulated text
+	// Check for completion promise and RLM markers in accumulated text
 	if resultMsg == nil {
 		resultMsg = &ResultMessage{}
 	}
-	if strings.Contains(state.AccumulatedText.String(), CompletionPromise) {
+	accText := state.AccumulatedText.String()
+	if strings.Contains(accText, CompletionPromise) {
 		resultMsg.SessionComplete = true
 	}
+	// Detect RLM markers
+	detectRLMMarkers(accText, resultMsg)
 
 	return resultMsg, nil
 }
@@ -282,8 +285,9 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 		return nil, err
 	}
 
-	// Check for completion promise in accumulated text
-	sessionComplete := strings.Contains(state.AccumulatedText.String(), CompletionPromise)
+	// Check for completion promise and RLM markers in accumulated text
+	accText := state.AccumulatedText.String()
+	sessionComplete := strings.Contains(accText, CompletionPromise)
 
 	// Build a result message for summary display
 	result := &ResultMessage{
@@ -297,6 +301,9 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 			CacheReadInputTokens: totalUsage.CachedInputTokens,
 		},
 	}
+
+	// Detect RLM markers
+	detectRLMMarkers(accText, result)
 
 	return result, nil
 }
@@ -374,5 +381,26 @@ func processCodexItemCompleted(line []byte, w io.Writer, state *StreamState) {
 			FormatTextDelta(w, item.Text+"\n")
 			state.AccumulatedText.WriteString(item.Text)
 		}
+	}
+}
+
+// detectRLMMarkers detects RLM markers in text and updates the result message
+func detectRLMMarkers(text string, result *ResultMessage) {
+	if result == nil {
+		return
+	}
+
+	// Detect phase marker: <rlm:phase>PHASE</rlm:phase>
+	if startIdx := strings.Index(text, RLMPhaseMarkerStart); startIdx != -1 {
+		afterStart := startIdx + len(RLMPhaseMarkerStart)
+		if endIdx := strings.Index(text[afterStart:], RLMPhaseMarkerEnd); endIdx != -1 {
+			phaseStr := text[afterStart : afterStart+endIdx]
+			result.RLMPhase = Phase(strings.TrimSpace(phaseStr))
+		}
+	}
+
+	// Detect verified marker: <rlm:verified>true</rlm:verified>
+	if strings.Contains(text, RLMVerifiedMarkerStart+"true"+RLMVerifiedMarkerEnd) {
+		result.RLMVerified = true
 	}
 }
