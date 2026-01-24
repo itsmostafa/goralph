@@ -20,7 +20,7 @@ task install           # Install goralph to ~/.local/bin/
 goralph run              # Run the agentic loop (uses Claude by default)
 goralph run -n 5         # Run with max 5 iterations (tasks broken into ~5 pieces)
 goralph run --max 10     # Run with max 10 iterations (tasks broken into ~10 pieces)
-goralph run --no-push    # Run without pushing changes after each iteration
+goralph run --no-push    # Run without committing or pushing changes
 goralph run --agent codex  # Use OpenAI Codex instead of Claude
 goralph run --rlm        # Enable RLM (Recursive Language Model) mode
 goralph run --verify     # Run build/test verification before commit
