@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.1.2](https://github.com/itsmostafa/goralph/compare/v0.1.1...v0.1.2) (2026-01-25)
+
+
+### Features
+
+* **cmd:** add CLI flags for RLM mode and verification ([4f5ecf2](https://github.com/itsmostafa/goralph/commit/4f5ecf223d5079dcda4653e06d1f369222528677))
+* **cmd:** replace --rlm flag with --mode flag ([9d91b47](https://github.com/itsmostafa/goralph/commit/9d91b475c59a7e3cf85d79e857973e3ff1131e8c))
+* **loop:** add Mode type and ModeRunner interface ([63e960d](https://github.com/itsmostafa/goralph/commit/63e960db0bf7cbc7ea24347f29aae794d00e650a))
+* **loop:** add PhaseRouter for RLM phase inference and guidance ([53f922e](https://github.com/itsmostafa/goralph/commit/53f922ed5ecccf183ef07204d9bd2773e700d858))
+* **loop:** add RalphRunner implementing ModeRunner ([f559c53](https://github.com/itsmostafa/goralph/commit/f559c5317f9dbf2facccb8149ba7ce5f4ec8f5fd))
+* **loop:** add RLM mode with structured phase-based execution ([1734469](https://github.com/itsmostafa/goralph/commit/1734469151e3221859f5936257131682c5071e4d))
+* **loop:** add RLM output formatting ([9b07d25](https://github.com/itsmostafa/goralph/commit/9b07d25a336ba17b3f61fd08338c23cf5a44a80f))
+* **loop:** add RLM prompt builder with context injection ([ef97dcf](https://github.com/itsmostafa/goralph/commit/ef97dcf0ae4507340dd9e9c61cb4a268456480ff))
+* **loop:** add RLM type definitions and constants ([21804f4](https://github.com/itsmostafa/goralph/commit/21804f4eb839c4724f2d216fb0d92eb9eadec2f4))
+* **loop:** add RLMRunner implementing ModeRunner ([564cac7](https://github.com/itsmostafa/goralph/commit/564cac79385c6bef64529f19b1f33aa9ab210cc1))
+* **loop:** add StateManager for RLM state persistence ([24ce92e](https://github.com/itsmostafa/goralph/commit/24ce92e8085bf4a78540c995ff987d3fdd009817))
+* **loop:** add Verifier for build/test validation ([33196b7](https://github.com/itsmostafa/goralph/commit/33196b7202887c221e8fe717e8259c76eff60e41))
+* **loop:** detect RLM markers in agent output ([975a755](https://github.com/itsmostafa/goralph/commit/975a755580fe9f273b8b318edf2960071dc05271))
+* **loop:** extend Config with RLM and verification options ([149564c](https://github.com/itsmostafa/goralph/commit/149564cddf4edafb89be24b8eba63525e8cec69e))
+* **loop:** integrate RLM mode and verification into main loop ([1a33b1e](https://github.com/itsmostafa/goralph/commit/1a33b1e616bdbceca685bf7a68959cd152a6c871))
+* **loop:** introduce ModeRunner interface for extensible execution modes ([989bb18](https://github.com/itsmostafa/goralph/commit/989bb18f098ca78f49ebaa36c6d4910cd2d7ee67))
+* **loop:** make --no-push skip commits in addition to pushes ([5a2cac0](https://github.com/itsmostafa/goralph/commit/5a2cac00b3f4b5783030cd3198f03d1c518572b6))
+* **output:** update tool completion indicators in-place using ANSI cursor control ([bfca20d](https://github.com/itsmostafa/goralph/commit/bfca20d229a8da9511a8aa48bd1f410dd92fc9f0))
+* **rlm:** add JSON schemas for agent-written state files ([fcb9aa6](https://github.com/itsmostafa/goralph/commit/fcb9aa65d53d93574063a6826c07b0d50dfc7ebc))
+
+
+### Bug Fixes
+
+* **loop:** reset text tracking after tool results to prevent truncation ([8f580db](https://github.com/itsmostafa/goralph/commit/8f580dbcdc52cd1b39a1e95c8b2b6ef3283847db))
+* **loop:** run --verify without requiring RLM marker ([04c8255](https://github.com/itsmostafa/goralph/commit/04c8255cb7a14ba875ca2551753cf4c301fafcbb))
+* **loop:** start first iteration in PLAN phase ([7ca2052](https://github.com/itsmostafa/goralph/commit/7ca2052208e9dfff42aab36d6df165c3115699b3))
+* **loop:** use zero-padded iteration in state filenames ([35926bc](https://github.com/itsmostafa/goralph/commit/35926bc88babb0cd36844a8f3bfa468165bb3ed2))
+* **rlm:** ensure agent implements during ACT phase ([4a9b57c](https://github.com/itsmostafa/goralph/commit/4a9b57c45ae33b28e7d7c2535dec0a0f111d1976))
+* **rlm:** explicitly instruct agent to implement changes in no-push mode ([2e35a73](https://github.com/itsmostafa/goralph/commit/2e35a739c2f4594ca793f49368727c0470dd6f7a))
+
 ## [0.1.1](https://github.com/itsmostafa/goralph/compare/v0.1.0...v0.1.1) (2026-01-23)
 
 
