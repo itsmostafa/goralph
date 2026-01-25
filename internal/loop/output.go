@@ -73,7 +73,7 @@ func FormatHeader(w io.Writer, cfg Config, branch string, model string) {
 
 	// Build mode indicator
 	var modeLine string
-	if cfg.RLM.Enabled {
+	if cfg.Mode == ModeRLM {
 		modeLine = fmt.Sprintf("\n%s %s", dimStyle.Render("Mode:"), titleStyle.Render("RLM"))
 		if cfg.VerifyEnabled {
 			modeLine += " + " + successStyle.Render("Verify")
@@ -247,9 +247,8 @@ func FormatToolComplete(w io.Writer, toolID, toolName string, state *StreamState
 	state.PendingToolIDs = append(state.PendingToolIDs[:pos], state.PendingToolIDs[pos+1:]...)
 }
 
-// FormatLoopBannerWithPhase renders the loop iteration banner with RLM phase
-func FormatLoopBannerWithPhase(w io.Writer, iteration int, phase Phase) {
-	phaseName := PhaseDisplayName(phase)
+// FormatLoopBannerWithPhase renders the loop iteration banner with mode phase
+func FormatLoopBannerWithPhase(w io.Writer, iteration int, phaseName string) {
 	banner := fmt.Sprintf(" LOOP %d · %s ", iteration, phaseName)
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, loopBannerStyle.Render(banner))

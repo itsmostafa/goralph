@@ -25,9 +25,10 @@ type Config struct {
 	NoPush         bool
 	Agent          AgentProvider
 	Output         io.Writer
-	RLM            RLMConfig // RLM mode configuration
-	VerifyEnabled  bool      // Run verification before commit
-	VerifyCommands []string  // Custom verification commands (auto-detected if empty)
+	Mode           Mode   // Execution mode (ralph or rlm)
+	RLMMaxDepth    int    // Maximum recursion depth for RLM mode
+	VerifyEnabled  bool   // Run verification before commit
+	VerifyCommands []string // Custom verification commands (auto-detected if empty)
 }
 
 // GeneratePlanPath returns a timestamped path for a new session-scoped plan file.
@@ -83,8 +84,8 @@ type ResultMessage struct {
 	Usage           Usage   `json:"usage"`
 	HasCost         bool    `json:"-"` // Internal field: true if provider supplies cost data
 	SessionComplete bool    `json:"-"` // Internal: true if agent emitted completion promise
-	RLMPhase        Phase   `json:"-"` // Internal: detected phase from RLM markers
-	RLMVerified     bool    `json:"-"` // Internal: true if agent emitted verified marker
+	ModePhase       string  `json:"-"` // Internal: detected phase from mode-specific markers
+	ModeVerified    bool    `json:"-"` // Internal: true if mode signaled verified
 }
 
 // Usage represents token usage statistics
@@ -195,4 +196,21 @@ type CodexItem struct {
 	Text    string `json:"text,omitempty"`
 	Command string `json:"command,omitempty"`
 	Name    string `json:"name,omitempty"` // For MCP tool calls
+}
+
+// VerificationReport contains the results of verification checks
+type VerificationReport struct {
+	Iteration int                 `json:"iteration"`
+	Passed    bool                `json:"passed"`
+	Checks    []VerificationCheck `json:"checks"`
+	Timestamp time.Time           `json:"timestamp"`
+}
+
+// VerificationCheck represents a single verification check
+type VerificationCheck struct {
+	Name    string `json:"name"`
+	Command string `json:"command"`
+	Passed  bool   `json:"passed"`
+	Output  string `json:"output"`
+	Error   string `json:"error,omitempty"`
 }
