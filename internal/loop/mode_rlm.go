@@ -119,6 +119,7 @@ func (r *RLMRunner) HandleResult(cfg Config, result *ResultMessage, iteration in
 
 	// Extract and execute ```repl code blocks from result
 	codeBlocks := ExtractREPLCodeBlocks(result.Result)
+	replSucceeded := false
 
 	for i, code := range codeBlocks {
 		fmt.Fprintf(r.output, "\n%s\n", dimStyle.Render(fmt.Sprintf("Executing REPL block %d...", i+1)))
@@ -126,6 +127,7 @@ func (r *RLMRunner) HandleResult(cfg Config, result *ResultMessage, iteration in
 		replResult, err := r.repl.Execute(code)
 		if err != nil {
 			fmt.Fprintf(r.output, "%s\n", errorStyle.Render(fmt.Sprintf("REPL Error: %v", err)))
+			fmt.Fprintf(r.output, "%s\n", dimStyle.Render("Code:\n"+code))
 			continue
 		}
 
@@ -137,6 +139,9 @@ func (r *RLMRunner) HandleResult(cfg Config, result *ResultMessage, iteration in
 		// Report errors
 		if replResult.Error != "" {
 			fmt.Fprintf(r.output, "%s\n", errorStyle.Render(fmt.Sprintf("REPL Error: %s", replResult.Error)))
+			fmt.Fprintf(r.output, "%s\n", dimStyle.Render("Code:\n"+code))
+		} else {
+			replSucceeded = true
 		}
 
 		// Track LLM calls
@@ -152,15 +157,20 @@ func (r *RLMRunner) HandleResult(cfg Config, result *ResultMessage, iteration in
 	}
 
 	// Check for FINAL_VAR(variable_name) marker
+	// Only try to get the variable if at least one REPL block succeeded
 	if varName := ExtractFinalVar(result.Result); varName != "" {
-		value, err := r.repl.GetVariable(varName)
-		if err != nil {
-			fmt.Fprintf(r.output, "%s\n", errorStyle.Render(fmt.Sprintf("Failed to get variable %q: %v", varName, err)))
+		if !replSucceeded && len(codeBlocks) > 0 {
+			fmt.Fprintf(r.output, "%s\n", errorStyle.Render(fmt.Sprintf("Cannot get variable %q: all REPL blocks failed", varName)))
 		} else {
-			r.session.FinalAnswer = fmt.Sprintf("%v", value)
-			r.session.IsComplete = true
-			result.SessionComplete = true
-			fmt.Fprintf(r.output, "\n%s\n", successStyle.Render(fmt.Sprintf("Final Answer (%s): %v", varName, value)))
+			value, err := r.repl.GetVariable(varName)
+			if err != nil {
+				fmt.Fprintf(r.output, "%s\n", errorStyle.Render(fmt.Sprintf("Failed to get variable %q: %v", varName, err)))
+			} else {
+				r.session.FinalAnswer = fmt.Sprintf("%v", value)
+				r.session.IsComplete = true
+				result.SessionComplete = true
+				fmt.Fprintf(r.output, "\n%s\n", successStyle.Render(fmt.Sprintf("Final Answer (%s): %v", varName, value)))
+			}
 		}
 	}
 

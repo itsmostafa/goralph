@@ -82,6 +82,7 @@ FINAL(The code has 3 issues that need to be fixed...)
 3. **State Persistence**: Variables persist across REPL blocks within the same iteration
 4. **Error Handling**: If code fails, you'll see the error - fix and retry
 5. **Completion**: Always signal completion with FINAL() or FINAL_VAR() when done
+6. **String Syntax**: Use double quotes for strings (e.g., "hello"). Do NOT use backticks - they are raw string literals in Tengo
 
 ## Session Info
 

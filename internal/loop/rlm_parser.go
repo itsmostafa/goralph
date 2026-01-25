@@ -6,7 +6,9 @@ import (
 )
 
 // REPL code block pattern: ```repl ... ```
-var replBlockPattern = regexp.MustCompile("(?s)```repl\\s*\\n(.*?)```")
+// The closing ``` must be at the start of a line (after newline) to avoid
+// matching backticks inside the code (which are raw string literals in Tengo)
+var replBlockPattern = regexp.MustCompile("(?s)```repl[^\\n]*\\n(.*?)\\n```")
 
 // FINAL marker patterns
 var finalAnswerPattern = regexp.MustCompile(`FINAL\(([^)]+)\)`)
