@@ -4,6 +4,7 @@ go 1.25.4
 
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/d5/tengo/v2 v2.17.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.10.2
 )

@@ -2,11 +2,14 @@ package loop
 
 import (
 	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // Provider defines the interface for agent providers
@@ -19,6 +22,8 @@ type Provider interface {
 	BuildCommand(prompt []byte) (*exec.Cmd, error)
 	// ParseOutput parses the agent output and returns the result summary
 	ParseOutput(r io.Reader, w io.Writer, logFile io.Writer) (*ResultMessage, error)
+	// Query makes a simple synchronous LLM query for recursive calls
+	Query(prompt string) (response string, usage Usage, err error)
 }
 
 // NewProvider creates a new Provider instance based on the agent type
@@ -129,6 +134,59 @@ func (p *ClaudeProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer
 	detectRLMMarkers(accText, resultMsg)
 
 	return resultMsg, nil
+}
+
+// Query makes a simple synchronous LLM query for recursive calls
+func (p *ClaudeProvider) Query(prompt string) (string, Usage, error) {
+	// Create command with timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "claude",
+		"-p",
+		"--output-format=json",
+		"--dangerously-skip-permissions",
+	)
+
+	// Capture stdout and stderr
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Write prompt to stdin
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return "", Usage{}, err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", Usage{}, err
+	}
+
+	// Write prompt and close stdin to signal EOF
+	_, _ = stdin.Write([]byte(prompt))
+	stdin.Close()
+
+	// Wait for completion
+	err = cmd.Wait()
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", Usage{}, fmt.Errorf("query timed out after 120s")
+	}
+	if err != nil {
+		return "", Usage{}, fmt.Errorf("claude failed: %s", stderr.String())
+	}
+
+	// Parse JSON response
+	var result struct {
+		Result string `json:"result"`
+		Usage  Usage  `json:"usage"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		// If JSON parsing fails, return raw output as result
+		return stdout.String(), Usage{}, nil
+	}
+
+	return result.Result, result.Usage, nil
 }
 
 // processClaudeAssistantMessage extracts and streams content from assistant messages
@@ -310,6 +368,59 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 	detectRLMMarkers(accText, result)
 
 	return result, nil
+}
+
+// Query makes a simple synchronous LLM query for recursive calls
+func (p *CodexProvider) Query(prompt string) (string, Usage, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "codex",
+		"exec",
+		"--json",
+		"--dangerously-bypass-approvals-and-sandbox",
+		"-",
+	)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return "", Usage{}, err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", Usage{}, err
+	}
+
+	_, _ = stdin.Write([]byte(prompt))
+	stdin.Close()
+
+	err = cmd.Wait()
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", Usage{}, fmt.Errorf("query timed out after 120s")
+	}
+	if err != nil {
+		return "", Usage{}, fmt.Errorf("codex failed: %s", stderr.String())
+	}
+
+	// Parse JSONL output, extract final agent_message
+	var lastText string
+	var totalUsage Usage
+	scanner := bufio.NewScanner(&stdout)
+	for scanner.Scan() {
+		var event CodexItemEvent
+		if err := json.Unmarshal(scanner.Bytes(), &event); err != nil {
+			continue
+		}
+		if event.Item.Type == "agent_message" && event.Item.Text != "" {
+			lastText = event.Item.Text
+		}
+	}
+
+	return lastText, totalUsage, nil
 }
 
 // processCodexItemStarted handles item.started events from Codex output

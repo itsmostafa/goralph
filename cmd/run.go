@@ -57,7 +57,7 @@ func init() {
 	runCmd.Flags().StringVar(&agent, "agent", defaultAgent, "Agent provider to use (claude, codex)")
 
 	// Mode flag
-	runCmd.Flags().StringVar(&mode, "mode", "ralph", "Execution mode (ralph, rlm)")
+	runCmd.Flags().StringVar(&mode, "mode", "ralph", "Execution mode: ralph (implementation plans) or rlm (REPL with recursive LLM calls)")
 
 	// Other flags
 	runCmd.Flags().BoolVar(&verifyEnabled, "verify", false, "Run verification (build/test) before commit")
