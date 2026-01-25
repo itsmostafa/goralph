@@ -17,14 +17,14 @@ task install           # Install goralph to ~/.local/bin/
 
 ### CLI usage
 ```bash
-goralph run              # Run the agentic loop (uses Claude by default)
-goralph run -n 5         # Run with max 5 iterations (tasks broken into ~5 pieces)
-goralph run --max 10     # Run with max 10 iterations (tasks broken into ~10 pieces)
-goralph run --no-push    # Run without committing or pushing changes
-goralph run --agent codex  # Use OpenAI Codex instead of Claude
-goralph run --rlm        # Enable RLM (Recursive Language Model) mode
-goralph run --verify     # Run build/test verification before commit
-goralph run --rlm --verify  # RLM mode with verification
+goralph run                 # Run the agentic loop (uses Claude by default)
+goralph run -n 5            # Run with max 5 iterations (tasks broken into ~5 pieces)
+goralph run --max 10        # Run with max 10 iterations (tasks broken into ~10 pieces)
+goralph run --no-push       # Run without committing or pushing changes
+goralph run --agent codex   # Use OpenAI Codex instead of Claude
+goralph run --mode=rlm      # Enable RLM (Recursive Language Model) mode
+goralph run --verify        # Run build/test verification before commit
+goralph run --mode=rlm --verify  # RLM mode with verification
 goralph run --max-depth 5   # Set max recursion depth for RLM (default: 3)
 ```
 
@@ -90,14 +90,13 @@ When `--verify` is enabled:
 - `cmd/` - Cobra CLI commands (root, run)
 - `internal/loop/` - Core loop logic
   - `loop.go` - Main loop execution and agent iteration
+  - `mode.go` - Mode type, ModeRunner interface, and validation
+  - `mode_ralph.go` - Ralph mode runner and prompt building
+  - `mode_rlm.go` - RLM mode runner, types, state, and phases
   - `providers.go` - Agent provider implementations (Claude, Codex)
-  - `types.go` - Message types and agent provider constants
-  - `rlm_types.go` - RLM-specific type definitions
-  - `state.go` - StateManager for RLM state persistence
-  - `phases.go` - Phase routing and inference logic
+  - `types.go` - Message types, Config, and shared constants
   - `verify.go` - Verification runner for build/test checks
   - `output.go` - Terminal output formatting with lipgloss
-  - `prompt.go` - Prompt file reading and construction
   - `git.go` - Git operations (push, branch management)
 - `internal/version/` - Version info (populated via ldflags at build time)
 - `.ralph/` - Prompt files and session data
