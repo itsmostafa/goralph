@@ -399,12 +399,12 @@ func detectRLMMarkers(text string, result *ResultMessage) {
 		afterStart := startIdx + len(RLMPhaseMarkerStart)
 		if endIdx := strings.Index(text[afterStart:], RLMPhaseMarkerEnd); endIdx != -1 {
 			phaseStr := text[afterStart : afterStart+endIdx]
-			result.RLMPhase = Phase(strings.TrimSpace(phaseStr))
+			result.ModePhase = strings.TrimSpace(phaseStr)
 		}
 	}
 
 	// Detect verified marker: <rlm:verified>true</rlm:verified>
 	if strings.Contains(text, RLMVerifiedMarkerStart+"true"+RLMVerifiedMarkerEnd) {
-		result.RLMVerified = true
+		result.ModeVerified = true
 	}
 }

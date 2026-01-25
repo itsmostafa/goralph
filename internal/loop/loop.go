@@ -7,11 +7,28 @@ import (
 	"time"
 )
 
+// NewModeRunner creates a new ModeRunner based on the mode
+func NewModeRunner(mode Mode, cfg Config) (ModeRunner, error) {
+	switch mode {
+	case ModeRalph:
+		return NewRalphRunner(), nil
+	case ModeRLM:
+		return NewRLMRunner(cfg.RLMMaxDepth), nil
+	default:
+		return nil, fmt.Errorf("unknown mode: %s", mode)
+	}
+}
+
 // Run executes the agentic loop
 func Run(cfg Config) error {
 	// Default output to stdout
 	if cfg.Output == nil {
 		cfg.Output = os.Stdout
+	}
+
+	// Default mode to ralph
+	if cfg.Mode == "" {
+		cfg.Mode = ModeRalph
 	}
 
 	// Create provider once at start
@@ -36,18 +53,16 @@ func Run(cfg Config) error {
 		return fmt.Errorf("failed to create plans directory: %w", err)
 	}
 
-	// Initialize RLM state if RLM mode is enabled
-	var stateManager *StateManager
-	if cfg.RLM.Enabled {
-		stateManager = NewStateManager(StateDir)
-		if _, err := stateManager.InitSession(); err != nil {
-			return fmt.Errorf("failed to initialize RLM session: %w", err)
-		}
-	} else {
-		// Reset implementation plan to initial template (non-RLM mode)
-		if err := resetImplementationPlan(cfg.PlanFile); err != nil {
-			return err
-		}
+	// Create mode runner
+	runner, err := NewModeRunner(cfg.Mode, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create mode runner: %w", err)
+	}
+	runner.SetOutput(cfg.Output)
+
+	// Initialize the mode runner
+	if err := runner.Initialize(cfg); err != nil {
+		return err
 	}
 
 	// Print configuration
@@ -72,18 +87,16 @@ func Run(cfg Config) error {
 			break
 		}
 
-		// Show loop banner before iteration (with phase if RLM mode)
-		if cfg.RLM.Enabled && stateManager != nil {
-			// Use inferred phase (same as what prompt receives) for consistent display
-			router := NewPhaseRouter(stateManager)
-			inferredPhase, _ := router.InferPhase()
-			FormatLoopBannerWithPhase(cfg.Output, iteration, inferredPhase)
+		// Show loop banner before iteration (with phase if available)
+		bannerInfo := runner.GetBannerInfo()
+		if bannerInfo.Phase != "" {
+			FormatLoopBannerWithPhase(cfg.Output, iteration, bannerInfo.Phase)
 		} else {
 			FormatLoopBanner(cfg.Output, iteration)
 		}
 
-		// Run iteration using the provider
-		completed, verifyFailed, err := runIterationWithRLM(cfg, provider, iteration, stateManager, verifier)
+		// Run iteration using the mode runner
+		completed, verifyFailed, err := runIteration(cfg, provider, iteration, runner, verifier)
 		if err != nil {
 			return fmt.Errorf("%s iteration failed: %w", provider.Name(), err)
 		}
@@ -109,33 +122,12 @@ func Run(cfg Config) error {
 	return nil
 }
 
-// runIterationWithRLM runs a single iteration with optional RLM state management and verification
-func runIterationWithRLM(cfg Config, provider Provider, iteration int, state *StateManager, verifier *Verifier) (completed bool, verifyFailed bool, err error) {
-	var promptContent []byte
-
-	// Build prompt based on mode
-	if cfg.RLM.Enabled && state != nil {
-		// Update session iteration
-		session, loadErr := state.LoadSession()
-		if loadErr != nil {
-			return false, false, fmt.Errorf("failed to load session: %w", loadErr)
-		}
-		session.Iteration = iteration
-		if saveErr := state.SaveSession(session); saveErr != nil {
-			return false, false, fmt.Errorf("failed to save session: %w", saveErr)
-		}
-
-		// Build RLM prompt
-		promptContent, err = buildRLMPrompt(cfg, state, iteration)
-		if err != nil {
-			return false, false, err
-		}
-	} else {
-		// Build standard prompt
-		promptContent, err = buildPromptWithPlan(cfg.PromptFile, cfg.PlanFile, iteration, cfg.MaxIterations, cfg.NoPush)
-		if err != nil {
-			return false, false, err
-		}
+// runIteration runs a single iteration with the mode runner and verification
+func runIteration(cfg Config, provider Provider, iteration int, runner ModeRunner, verifier *Verifier) (completed bool, verifyFailed bool, err error) {
+	// Build prompt using mode runner
+	promptContent, err := runner.BuildPrompt(cfg, iteration)
+	if err != nil {
+		return false, false, err
 	}
 
 	// Create logs directory
@@ -217,44 +209,24 @@ func runIterationWithRLM(cfg Config, provider Provider, iteration int, state *St
 		fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: No result message received from %s", provider.Name())))
 	}
 
-	// Update RLM state if enabled
-	if cfg.RLM.Enabled && state != nil && resultMsg != nil {
-		// Update phase if detected
-		if resultMsg.RLMPhase != "" {
-			if updateErr := state.UpdateIteration(resultMsg.RLMPhase); updateErr != nil {
-				fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: Failed to update RLM phase: %v", updateErr)))
-			}
-		}
-
-		// Record iteration in history
-		historyEntry := HistoryEntry{
-			Iteration: iteration,
-			Role:      "assistant",
-			Content:   fmt.Sprintf("Iteration %d completed", iteration),
-			Phase:     resultMsg.RLMPhase,
-		}
-		if appendErr := state.AppendHistory(historyEntry); appendErr != nil {
-			fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: Failed to append history: %v", appendErr)))
+	// Handle result using mode runner
+	if resultMsg != nil {
+		if err := runner.HandleResult(cfg, resultMsg, iteration); err != nil {
+			fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: Failed to handle result: %v", err)))
 		}
 	}
 
-	// Run verification if enabled (in RLM mode, also requires agent signal)
-	runVerification := verifier != nil && verifier.HasCommands()
-	if cfg.RLM.Enabled {
-		// In RLM mode, only run verification when agent signals <rlm:verified>
-		runVerification = runVerification && resultMsg != nil && resultMsg.RLMVerified
-	}
+	// Run verification if mode decides to
+	runVerification := verifier != nil && verifier.HasCommands() && runner.ShouldRunVerification(cfg, resultMsg)
 	if runVerification {
 		fmt.Fprintln(cfg.Output)
 		fmt.Fprintln(cfg.Output, dimStyle.Render("Running verification..."))
 
 		report := verifier.Run(iteration)
 
-		// Store verification report if state manager available
-		if state != nil {
-			if storeErr := state.StoreVerification(report); storeErr != nil {
-				fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: Failed to store verification report: %v", storeErr)))
-			}
+		// Store verification report using mode runner
+		if err := runner.StoreVerification(report); err != nil {
+			fmt.Fprintln(cfg.Output, dimStyle.Render(fmt.Sprintf("Warning: Failed to store verification report: %v", err)))
 		}
 
 		if report.Passed {
