@@ -11,7 +11,7 @@ type Mode string
 const (
 	// ModeRalph is the default ralph mode using implementation plans
 	ModeRalph Mode = "ralph"
-	// ModeRLM is the RLM (Recursive Language Model) mode with state persistence
+	// ModeRLM is the RLM (Recursive Language Model) mode with REPL environment
 	ModeRLM Mode = "rlm"
 )
 
