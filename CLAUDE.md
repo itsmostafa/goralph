@@ -59,24 +59,56 @@ When using `--max`/`-n` flag:
 
 ## RLM Mode
 
-RLM (Recursive Language Model) mode uses a structured approach where state is persisted to files rather than relying on context window. Each iteration follows the RLM cycle: PLAN → SEARCH → NARROW → ACT → VERIFY.
+RLM (Recursive Language Model) mode implements the academic RLM approach (arXiv:2512.24601) with a REPL environment for programmatic context manipulation. The LLM can write and execute code to explore context and make recursive LLM calls.
+
+### REPL Environment
+
+In RLM mode, agents have access to a Tengo scripting environment. They write code in ` + "```repl" + ` blocks:
+
+```repl
+// Access the task context
+println(slice(context, 0, 200))
+
+// Search for patterns
+matches := find_all("TODO:.*", context)
+for m in matches {
+    println(m)
+}
+
+// Make recursive LLM calls
+summary := llm_query("Summarize: " + slice(context, 0, 1000))
+println(summary)
+```
+
+### Built-in REPL Functions
+
+- `context` - The full task/document as a string
+- `slice(s, start, end)` - Get substring
+- `len(s)` - Length of string or array
+- `contains(s, substr)` - Check if string contains substring
+- `split(s, sep)` / `join(arr, sep)` - Split/join strings
+- `find_all(pattern, text)` - Regex search
+- `replace(s, old, new)` - String replacement
+- `llm_query(prompt)` - Recursive LLM call
+- `llm_batch(prompts)` - Batched LLM calls
+- `println(args...)` / `print(args...)` - Output
+
+### RLM Completion Markers
+
+Agents signal completion using:
+- `FINAL(answer text)` - Direct final answer
+- `FINAL_VAR(variable_name)` - Return value of a REPL variable
+- `<promise>COMPLETE</promise>` - Legacy completion marker
 
 ### RLM State Directory
 
-When RLM mode is enabled, state is persisted in `.ralph/state/`:
-- `session.json` - Session metadata (iteration, depth, phase)
-- `context.json` - Context manifest (discoveries, key files, focus)
-- `history.jsonl` - Conversation history across iterations
-- `search/` - Search operation results
-- `narrow/` - Narrowed context subsets
+Session state is persisted in `.ralph/state/`:
+- `session.json` - Session metadata (iteration, depth, LLM call count)
 - `verification/` - Verification reports
 
-### RLM Markers
+### Recursion Depth
 
-Agents signal state transitions using markers:
-- `<rlm:phase>PHASE</rlm:phase>` - Signal phase transition (PLAN, SEARCH, NARROW, ACT, VERIFY)
-- `<rlm:verified>true</rlm:verified>` - Signal verification passed
-- `<promise>COMPLETE</promise>` - Signal all tasks complete
+The `--max-depth` flag (default: 3) limits how deep recursive `llm_query()` calls can go to prevent runaway token usage.
 
 ### Verification
 
@@ -92,8 +124,14 @@ When `--verify` is enabled:
   - `loop.go` - Main loop execution and agent iteration
   - `mode.go` - Mode type, ModeRunner interface, and validation
   - `mode_ralph.go` - Ralph mode runner and prompt building
-  - `mode_rlm.go` - RLM mode runner, types, state, and phases
-  - `providers.go` - Agent provider implementations (Claude, Codex)
+  - `mode_rlm.go` - RLM mode runner with REPL environment
+  - `rlm_types.go` - RLM-specific types (REPLResult, LLMCallRecord, RLMSession)
+  - `rlm_repl.go` - REPLExecutor interface
+  - `rlm_go_repl.go` - GoREPL implementation using Tengo scripting
+  - `rlm_bridge.go` - LMBridge for routing recursive LLM calls
+  - `rlm_parser.go` - Parser for REPL code blocks and FINAL markers
+  - `rlm_prompts.go` - System prompt templates for RLM mode
+  - `providers.go` - Agent provider implementations (Claude, Codex) with Query method
   - `types.go` - Message types, Config, and shared constants
   - `verify.go` - Verification runner for build/test checks
   - `output.go` - Terminal output formatting with lipgloss
@@ -115,3 +153,4 @@ When `--verify` is enabled:
 - `github.com/spf13/cobra` - CLI framework
 - `github.com/charmbracelet/lipgloss` - Terminal styling
 - `github.com/google/uuid` - UUID generation for RLM sessions
+- `github.com/d5/tengo/v2` - Tengo scripting language for RLM REPL
