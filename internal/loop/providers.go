@@ -117,13 +117,16 @@ func (p *ClaudeProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer
 		return nil, err
 	}
 
-	// Check for completion promise in accumulated text
+	// Check for completion promise and RLM markers in accumulated text
 	if resultMsg == nil {
 		resultMsg = &ResultMessage{}
 	}
-	if strings.Contains(state.AccumulatedText.String(), CompletionPromise) {
+	accText := state.AccumulatedText.String()
+	if strings.Contains(accText, CompletionPromise) {
 		resultMsg.SessionComplete = true
 	}
+	// Detect RLM markers
+	detectRLMMarkers(accText, resultMsg)
 
 	return resultMsg, nil
 }
@@ -166,7 +169,7 @@ func processClaudeAssistantMessage(line []byte, w io.Writer, state *StreamState)
 					fmt.Fprintln(w)
 					state.NeedsNewline = false
 				}
-				FormatToolStart(w, block.Name)
+				FormatToolStart(w, block.ID, block.Name, state)
 			}
 		}
 	}
@@ -184,11 +187,15 @@ func processClaudeUserMessage(line []byte, w io.Writer, state *StreamState) {
 			toolName := state.ActiveTools[block.ToolUseID]
 			if toolName != "" && !state.CompletedTools[block.ToolUseID] {
 				state.CompletedTools[block.ToolUseID] = true
-				FormatToolComplete(w, toolName)
+				FormatToolComplete(w, block.ToolUseID, toolName, state)
 				state.NeedsNewline = false // Tool complete ends with newline
 			}
 		}
 	}
+
+	// Reset text tracking for the next assistant message turn
+	// This ensures new assistant text after tools is fully displayed
+	state.LastTextLen = 0
 }
 
 // CodexProvider implements Provider for OpenAI Codex agent
@@ -282,8 +289,9 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 		return nil, err
 	}
 
-	// Check for completion promise in accumulated text
-	sessionComplete := strings.Contains(state.AccumulatedText.String(), CompletionPromise)
+	// Check for completion promise and RLM markers in accumulated text
+	accText := state.AccumulatedText.String()
+	sessionComplete := strings.Contains(accText, CompletionPromise)
 
 	// Build a result message for summary display
 	result := &ResultMessage{
@@ -297,6 +305,9 @@ func (p *CodexProvider) ParseOutput(r io.Reader, w io.Writer, logFile io.Writer)
 			CacheReadInputTokens: totalUsage.CachedInputTokens,
 		},
 	}
+
+	// Detect RLM markers
+	detectRLMMarkers(accText, result)
 
 	return result, nil
 }
@@ -322,7 +333,7 @@ func processCodexItemStarted(line []byte, w io.Writer, state *StreamState) {
 			toolName = cmd
 		}
 		state.ActiveTools[item.ID] = toolName
-		FormatToolStart(w, toolName)
+		FormatToolStart(w, item.ID, toolName, state)
 	case "mcp_tool_call":
 		// MCP tool invocation starting
 		toolName := item.Name
@@ -330,13 +341,13 @@ func processCodexItemStarted(line []byte, w io.Writer, state *StreamState) {
 			toolName = "mcp_tool"
 		}
 		state.ActiveTools[item.ID] = toolName
-		FormatToolStart(w, toolName)
+		FormatToolStart(w, item.ID, toolName, state)
 	case "file_change":
 		state.ActiveTools[item.ID] = "file_change"
-		FormatToolStart(w, "file_change")
+		FormatToolStart(w, item.ID, "file_change", state)
 	case "web_search":
 		state.ActiveTools[item.ID] = "web_search"
-		FormatToolStart(w, "web_search")
+		FormatToolStart(w, item.ID, "web_search", state)
 	}
 }
 
@@ -366,7 +377,7 @@ func processCodexItemCompleted(line []byte, w io.Writer, state *StreamState) {
 		toolName := state.ActiveTools[item.ID]
 		if toolName != "" && !state.CompletedTools[item.ID] {
 			state.CompletedTools[item.ID] = true
-			FormatToolComplete(w, toolName)
+			FormatToolComplete(w, item.ID, toolName, state)
 		}
 	case "plan_update":
 		// Plan updates can be displayed as text if desired
@@ -374,5 +385,26 @@ func processCodexItemCompleted(line []byte, w io.Writer, state *StreamState) {
 			FormatTextDelta(w, item.Text+"\n")
 			state.AccumulatedText.WriteString(item.Text)
 		}
+	}
+}
+
+// detectRLMMarkers detects RLM markers in text and updates the result message
+func detectRLMMarkers(text string, result *ResultMessage) {
+	if result == nil {
+		return
+	}
+
+	// Detect phase marker: <rlm:phase>PHASE</rlm:phase>
+	if startIdx := strings.Index(text, RLMPhaseMarkerStart); startIdx != -1 {
+		afterStart := startIdx + len(RLMPhaseMarkerStart)
+		if endIdx := strings.Index(text[afterStart:], RLMPhaseMarkerEnd); endIdx != -1 {
+			phaseStr := text[afterStart : afterStart+endIdx]
+			result.RLMPhase = Phase(strings.TrimSpace(phaseStr))
+		}
+	}
+
+	// Detect verified marker: <rlm:verified>true</rlm:verified>
+	if strings.Contains(text, RLMVerifiedMarkerStart+"true"+RLMVerifiedMarkerEnd) {
+		result.RLMVerified = true
 	}
 }
